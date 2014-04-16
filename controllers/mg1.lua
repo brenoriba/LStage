@@ -20,7 +20,7 @@
 	   
 	**********************************************************************************************
 ]]--
-
+local a = {}
 local mg1    = {}
 local lstage = require 'lstage'
 local sort   = require 'lstage.utils.mergesort'
