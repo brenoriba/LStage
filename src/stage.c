@@ -7,30 +7,26 @@
 #include <stdlib.h>
 #include <string.h>
 
-typedef int bool;
-#define true 1
-#define false 0
-
-// Flag utilizada para verificar se um estágio pode receber novos eventos
-static bool _enabled = true;
-
 #define DEFAULT_I_IDLE_CAPACITY 10
 #define DEFAULT_QUEUE_CAPACITY -1
 
 static void get_metatable(lua_State * L);
 extern pool_t lstage_defaultpool;
+
 stage_t lstage_tostage(lua_State *L, int i) {
 	stage_t * s = luaL_checkudata (L, i, LSTAGE_STAGE_METATABLE);
 	luaL_argcheck (L, s != NULL, i, "Stage expected");
 	return *s;
 }
 
+// Retorna a capacidade máxima da fila de evento
 static int get_queue_capacity(lua_State * L) {
 	stage_t s=lstage_tostage(L,1);
 	lua_pushnumber(L,lstage_lfqueue_getcapacity(s->event_queue));
 	return 1;
 }
 
+// Configura capacidade da fila de evento
 static int set_queue_capacity(lua_State * L) {
 	stage_t s=lstage_tostage(L,1);
 	luaL_checktype (L, 2, LUA_TNUMBER);
@@ -39,6 +35,7 @@ static int set_queue_capacity(lua_State * L) {
 	return 0;
 }
 
+// Capacidade máximo de instâncias rodando paralelamente
 static int get_max_instances(lua_State * L) {
 	stage_t s=lstage_tostage(L,1);
 	lua_pushnumber(L,lstage_lfqueue_getcapacity(s->instances));
@@ -93,14 +90,16 @@ static int stage_wrap(lua_State * L) {
 
 // Método de insere um evento na fila de entrada de um estágio
 static int stage_push(lua_State *L) {
+   stage_t s=lstage_tostage(L,1);
+
    // Verificando se o estágio está ativo
-   if (!_enabled) {
+   int enabled = s->enabled;
+   if (enabled == 0) {
       lua_pushnil(L);
       lua_pushliteral(L,"Stage is disabled");
       return 2;
    }
 
-   stage_t s=lstage_tostage(L,1);
    int top=lua_gettop(L);
    lua_pushcfunction(L,mar_encode);
    lua_newtable(L);
@@ -115,6 +114,7 @@ static int stage_push(lua_State *L) {
    lua_pop(L,1);
    event_t ev=lstage_newevent(str,len);
    instance_t ins=NULL;
+
    if(lstage_lfqueue_try_pop(s->instances,&ins)) {
    	ins->ev=ev;
 		ins->flags=I_READY;
@@ -131,22 +131,29 @@ static int stage_push(lua_State *L) {
    return 2;
 }
 
+// Habilita ou desabilita um estágio (utilizado nas funções "stage_enable" e "stage_disable")
+static int stage_stage_status(lua_State *L, int enable) {
+	stage_t s = lstage_tostage(L, 1);
+	s->enabled=enable;
+	lua_pushvalue(L,1);
+	return 1;
+}
+
 // Habilita eventos de um certo estágio
 static int stage_enable(lua_State *L) {
-   _enabled = true;
-   return 2;
+	return stage_stage_status(L, 1);
 }
 
 // Desabilita eventos de um certo estágio
 static int stage_disable(lua_State *L) {
-   _enabled = false;
-   return 2;
+	return stage_stage_status(L, 0);
 }
 
 // Verifica se um estágio está ativo
 static int stage_active(lua_State *L) {
-   lua_pushinteger(L,_enabled);
-   return 1;
+	stage_t s = lstage_tostage(L, 1);
+	lua_pushinteger(L,s->enabled);
+	return 1;
 }
 
 /*tostring method*/
@@ -253,6 +260,7 @@ static int stage_setpool(lua_State * L) {
 	return 0;
 }
 
+// Modifica a prioridade de um estágio
 static int stage_setpriority(lua_State * L) {
 	stage_t s = lstage_tostage(L, 1);
 	int p=lua_tointeger(L,2);
@@ -261,6 +269,8 @@ static int stage_setpriority(lua_State * L) {
 	return 1;
 }
 
+// Configura a prioridade de um estágio
+// Inicialmente todos tem prioridade 0
 static int stage_getpriority(lua_State * L) {
 	stage_t s = lstage_tostage(L, 1);
 	lua_pushinteger(L,s->priority);
@@ -332,11 +342,11 @@ static int stage_isstage(lua_State * L) {
 }
 
 static int lstage_newstage(lua_State * L) {
-	_enabled = true;
 	int idle=0;
 	stage_t * stage=NULL;
+
  	if(!lua_gettop(L)) {
- 		stage=lua_newuserdata(L,sizeof(stage_t *));
+ 	   stage=lua_newuserdata(L,sizeof(stage_t *));
 	   (*stage)=malloc(sizeof(struct lstage_Stage));   
 	   (*stage)->instances=lstage_lfqueue_new();
 	   lstage_lfqueue_setcapacity((*stage)->instances,0);
@@ -344,16 +354,17 @@ static int lstage_newstage(lua_State * L) {
 	   lstage_lfqueue_setcapacity((*stage)->event_queue,DEFAULT_QUEUE_CAPACITY);
 	   (*stage)->env=NULL;
 	   (*stage)->env_len=0;
+
 	} else {
-		luaL_checktype (L, 1, LUA_TFUNCTION);
-   	idle=luaL_optint(L, 2, 1);
-   	int capacity=luaL_optint(L, 3, DEFAULT_QUEUE_CAPACITY);
-   	lua_pushcfunction(L,mar_encode);
-   	lua_pushvalue(L,1);
-   	lua_call(L,1,1);   
-   	const char *env=NULL;
-		size_t len=0; 
-		env=lua_tolstring(L,-1,&len);
+	   luaL_checktype (L, 1, LUA_TFUNCTION);
+      	   idle=luaL_optint(L, 2, 1);
+   	   int capacity=luaL_optint(L, 3, DEFAULT_QUEUE_CAPACITY);
+   	   lua_pushcfunction(L,mar_encode);
+   	   lua_pushvalue(L,1);
+   	   lua_call(L,1,1);   
+   	   const char *env=NULL;
+	   size_t len=0; 
+	   env=lua_tolstring(L,-1,&len);
 	   lua_pop(L,1);
 	   stage=lua_newuserdata(L,sizeof(stage_t *));
 	   (*stage)=calloc(1,sizeof(struct lstage_Stage));   
@@ -368,9 +379,12 @@ static int lstage_newstage(lua_State * L) {
 	   (*stage)->env=envcp;
 	   (*stage)->env_len=len;
 	}
+
 	(*stage)->pool=lstage_defaultpool;
 	(*stage)->priority=0;
+	(*stage)->enabled=1;
   	get_metatable(L);
+
    lua_setmetatable(L,-2);
    if(idle>0) {
 	   lua_pushcfunction(L,stage_instantiate);

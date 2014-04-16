@@ -23,14 +23,16 @@ enum stage_flag_t {
 	DESTROYED=0x01
 };
 
+// Estrutura de um estágio
 struct lstage_Stage {
-	LFqueue_t instances;
-	LFqueue_t event_queue;
-	pool_t pool;
-	char * env;
-	size_t env_len;
-	volatile unsigned int flags;
-	volatile int priority;
+   LFqueue_t instances;
+   LFqueue_t event_queue;
+   pool_t pool;
+   int enabled;
+   char * env;
+   size_t env_len;
+   volatile unsigned int flags;
+   volatile int priority;
    stage_t parent;
 };
 
