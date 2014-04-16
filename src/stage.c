@@ -19,14 +19,14 @@ stage_t lstage_tostage(lua_State *L, int i) {
 	return *s;
 }
 
-// Retorna a capacidade máxima da fila de evento
+// Return event queue capacity
 static int get_queue_capacity(lua_State * L) {
 	stage_t s=lstage_tostage(L,1);
 	lua_pushnumber(L,lstage_lfqueue_getcapacity(s->event_queue));
 	return 1;
 }
 
-// Configura capacidade da fila de evento
+// Set queue capacity
 static int set_queue_capacity(lua_State * L) {
 	stage_t s=lstage_tostage(L,1);
 	luaL_checktype (L, 2, LUA_TNUMBER);
@@ -35,7 +35,7 @@ static int set_queue_capacity(lua_State * L) {
 	return 0;
 }
 
-// Capacidade máximo de instâncias rodando paralelamente
+// Max number of instances to run in parallel
 static int get_max_instances(lua_State * L) {
 	stage_t s=lstage_tostage(L,1);
 	lua_pushnumber(L,lstage_lfqueue_getcapacity(s->instances));
@@ -88,11 +88,11 @@ static int stage_wrap(lua_State * L) {
 	return 1;
 }
 
-// Método de insere um evento na fila de entrada de um estágio
+// Insert a new event into event queue
 static int stage_push(lua_State *L) {
    stage_t s=lstage_tostage(L,1);
 
-   // Verificando se o estágio está ativo
+   // Check if the stage is enabled to receive new events
    int enabled = s->enabled;
    if (enabled == 0) {
       lua_pushnil(L);
@@ -131,7 +131,7 @@ static int stage_push(lua_State *L) {
    return 2;
 }
 
-// Habilita ou desabilita um estágio (utilizado nas funções "stage_enable" e "stage_disable")
+// Enable or disable a stage (used in functions "stage_enable" and "stage_disable")
 static int stage_stage_status(lua_State *L, int enable) {
 	stage_t s = lstage_tostage(L, 1);
 	s->enabled=enable;
@@ -139,17 +139,17 @@ static int stage_stage_status(lua_State *L, int enable) {
 	return 1;
 }
 
-// Habilita eventos de um certo estágio
+// Enable a stage to receive new events
 static int stage_enable(lua_State *L) {
 	return stage_stage_status(L, 1);
 }
 
-// Desabilita eventos de um certo estágio
+// Disable stage - won't receive new events
 static int stage_disable(lua_State *L) {
 	return stage_stage_status(L, 0);
 }
 
-// Verifica se um estágio está ativo
+// Check stage status
 static int stage_active(lua_State *L) {
 	stage_t s = lstage_tostage(L, 1);
 	lua_pushinteger(L,s->enabled);
@@ -163,20 +163,21 @@ static int stage_tostring (lua_State *L) {
   return 1;
 }
 
+// Get stage unique ID
 static int stage_getid (lua_State *L) {
 	stage_t s = lstage_tostage(L, 1);
 	lua_pushlstring(L,(const char *)&s,sizeof(void*));
 	return 1;
 }
 
-// Total de eventos na fila de entrada de um determinado estágio
+// Number of events on the events queue at the moment
 static int stage_queue_size (lua_State *L) {
 	stage_t s = lstage_tostage(L, 1);
 	lua_pushnumber(L,lstage_lfqueue_size(s->event_queue));
 	return 1;
 }
 
-// Total de instâncias livres para um determinado estágio
+// Number of instances configured to the specific stage
 static int stage_instances_size (lua_State *L) {
 	stage_t s = lstage_tostage(L, 1);
 	lua_pushnumber(L,lstage_lfqueue_size(s->instances));
@@ -260,7 +261,7 @@ static int stage_setpool(lua_State * L) {
 	return 0;
 }
 
-// Modifica a prioridade de um estágio
+// Set stage priority
 static int stage_setpriority(lua_State * L) {
 	stage_t s = lstage_tostage(L, 1);
 	int p=lua_tointeger(L,2);
@@ -269,8 +270,7 @@ static int stage_setpriority(lua_State * L) {
 	return 1;
 }
 
-// Configura a prioridade de um estágio
-// Inicialmente todos tem prioridade 0
+// Get stage priority
 static int stage_getpriority(lua_State * L) {
 	stage_t s = lstage_tostage(L, 1);
 	lua_pushinteger(L,s->priority);

@@ -23,7 +23,7 @@ enum stage_flag_t {
 	DESTROYED=0x01
 };
 
-// Estrutura de um estágio
+// Stage struct
 struct lstage_Stage {
    LFqueue_t instances;
    LFqueue_t event_queue;

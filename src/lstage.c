@@ -113,7 +113,7 @@ static int get_cpus() {
    return 0;
 }
 
-// Dispara uma callback chamada on_timer
+// Callback call - "on_timer" function
 static void lstage_timer_event (evutil_socket_t fd, short events, void *arg) {
 	lua_getglobal(L_main, "on_timer");
 
@@ -126,7 +126,7 @@ static void lstage_timer_event (evutil_socket_t fd, short events, void *arg) {
 	}
  }
 
-// Inclui o evento de timer para ser disparado como callback de tempo em tempo
+// Insert timer event
 static int add_timer(lua_State * L) {
 	// Creating new event
 	if (lstage_event_base == NULL)
@@ -152,7 +152,7 @@ static int add_timer(lua_State * L) {
    	return 0;
 }
 
-// Realiza o dispatch dos eventos criados pelo add_timer
+// Dispatch on_timer events
 static int dispatch_events(lua_State * L) {
 	if (lstage_event_base != NULL)
 		event_base_dispatch(lstage_event_base);
