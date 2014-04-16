@@ -1,6 +1,6 @@
 local lstage = require 'lstage'
 local srpt   = require 'lstage.controllers.srpt'
-local dbr    = require 'lstage.controllers.dbr'
+local mg1    = require 'lstage.controllers.mg1'
 
 -- Creating stages table
 local policy = "SRPT"
@@ -56,7 +56,7 @@ if (policy == "MG1") then
 	stages[2] = stage2
 
 	-- Configuring priority between stages
-	dbr.configure(stages, cores, 1)
+	mg1.configure(stages, cores, 1)
 end
 
 for i=1,10 do
