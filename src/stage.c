@@ -7,7 +7,12 @@
 #include <stdlib.h>
 #include <string.h>
 
-//static qt_hash H;
+typedef int bool;
+#define true 1
+#define false 0
+
+// Flag utilizada para verificar se um estágio pode receber novos eventos
+static bool _enabled = true;
 
 #define DEFAULT_I_IDLE_CAPACITY 10
 #define DEFAULT_QUEUE_CAPACITY -1
@@ -86,7 +91,15 @@ static int stage_wrap(lua_State * L) {
 	return 1;
 }
 
+// Método de insere um evento na fila de entrada de um estágio
 static int stage_push(lua_State *L) {
+   // Verificando se o estágio está ativo
+   if (!_enabled) {
+      lua_pushnil(L);
+      lua_pushliteral(L,"Stage is disabled");
+      return 2;
+   }
+
    stage_t s=lstage_tostage(L,1);
    int top=lua_gettop(L);
    lua_pushcfunction(L,mar_encode);
@@ -120,12 +133,20 @@ static int stage_push(lua_State *L) {
 
 // Habilita eventos de um certo estágio
 static int stage_enable(lua_State *L) {
+   _enabled = true;
    return 2;
 }
 
 // Desabilita eventos de um certo estágio
 static int stage_disable(lua_State *L) {
+   _enabled = false;
    return 2;
+}
+
+// Verifica se um estágio está ativo
+static int stage_active(lua_State *L) {
+   lua_pushinteger(L,_enabled);
+   return 1;
 }
 
 /*tostring method*/
@@ -278,6 +299,7 @@ static const struct luaL_Reg StageMetaFunctions[] = {
 		{"setpriority",stage_setpriority},
 		{"disable",stage_disable},
 		{"enable",stage_enable},
+		{"active",stage_active},
 		{NULL,NULL}
 };
 
@@ -310,6 +332,7 @@ static int stage_isstage(lua_State * L) {
 }
 
 static int lstage_newstage(lua_State * L) {
+	_enabled = true;
 	int idle=0;
 	stage_t * stage=NULL;
  	if(!lua_gettop(L)) {
