@@ -29,6 +29,7 @@ struct lstage_Stage {
    LFqueue_t event_queue;
    pool_t pool;
    int enabled;
+   int globalQueue;
    char * env;
    size_t env_len;
    volatile unsigned int flags;

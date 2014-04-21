@@ -9,8 +9,8 @@ stage1:setpriority(1)
 stage2:setpriority(10)
 
 for i=1,10 do
-stage1:push()
-stage2:push()
+   stage1:push()
+   stage2:push()
 end
 
 

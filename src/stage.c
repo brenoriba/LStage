@@ -35,6 +35,41 @@ static int set_queue_capacity(lua_State * L) {
 	return 0;
 }
 
+// Config global queue for the stage (0 - disabled, 1 - enabled)
+static int stage_config_global_queue (lua_State * L, int enable) {
+	stage_t s = lstage_tostage(L, 1);
+	s->globalQueue=enable;
+	lua_pushvalue(L,1);
+	return 1;
+}
+
+// Enable global queue for this stage
+static int stage_enable_global_queue(lua_State * L) {
+	return stage_config_global_queue (L, 1);
+}
+
+// Disable global queue for this stage
+static int stage_disable_global_queue(lua_State * L) {
+	return stage_config_global_queue (L, 0);
+}
+
+// Check if stage is using global queue
+static int stage_global_queue_enabled (lua_State * L) {
+	stage_t s=lstage_tostage(L,1);
+	lua_pushnumber(L,s->globalQueue);
+	return 1;
+}
+
+// Set queue type (stage queue or global queue)
+// Used when creating new stage (after "instances" parameter)
+static int set_use_global_queue(lua_State * L) {
+	stage_t s=lstage_tostage(L,1);
+	luaL_checktype (L, 3, LUA_TNUMBER);
+	int useGlobal=lua_tointeger(L,3);
+	s->globalQueue = useGlobal;
+	return 0;
+}
+
 // Max number of instances to run in parallel
 static int get_max_instances(lua_State * L) {
 	stage_t s=lstage_tostage(L,1);
@@ -310,6 +345,9 @@ static const struct luaL_Reg StageMetaFunctions[] = {
 		{"disable",stage_disable},
 		{"enable",stage_enable},
 		{"active",stage_active},
+		{"enable_global_queue", stage_enable_global_queue},
+		{"disable_global_queue", stage_disable_global_queue},
+		{"use_global_queue",stage_global_queue_enabled},
 		{NULL,NULL}
 };
 
