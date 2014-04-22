@@ -50,7 +50,7 @@ function mg1.configure(stagesTable, numberOfThreads, refreshSeconds)
 	-- use to get stage's rate at "on_timer" callback
 	stages = stagesTable
 
-	-- Every 1 second with ID = 100
+	-- Every "refreshSeconds" with ID = 100
 	lstage.add_timer(refreshSeconds, 100)
 end
 
@@ -60,12 +60,12 @@ end
 	</summary>
 	<param name="id">Timer ID</param>
 ]]--
-on_timer=function(id)            
+on_timer=function(id)
 	local pollingTable = {}
 
 	-- Get queue size
 	for index=1,#stages do
-		local size = #stagesRate+1
+		local size = #pollingTable+1
 
 		pollingTable[size]       = {}
 		pollingTable[size].stage = stages[index]

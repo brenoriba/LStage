@@ -3,7 +3,7 @@ local srpt   = require 'lstage.controllers.srpt'
 local mg1    = require 'lstage.controllers.mg1'
 
 -- Creating stages table
-local policy = "SRPT"
+local policy = "MG1"
 local stages = {}
 local cores  = lstage.cpus() * 2
 
