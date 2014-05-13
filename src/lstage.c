@@ -73,16 +73,24 @@ void tableDump(lua_State *L, int idx, const char* text)
 }
 #endif
 
+// Get LSTAGE version
 static int lstage_version(lua_State * L) {
 	lua_pushliteral(L,LSTAGE_VERSION);
 	return 1;
 }
 
+// Get LSTAGE throughput
+static int lstage_getthroughput(lua_State * L) {
+	int currentDt = now_secs();
+	lua_pushnumber(L,now_secs());
+	return 1;
+}
+
+// Get current system time
 static int lstage_gettime(lua_State * L) {
    lua_pushnumber(L,now_secs());
    return 1;
 }
-
 
 static int lstage_getself(lua_State *L) {
 	lua_pushliteral(L,LSTAGE_INSTANCE_KEY);
@@ -203,6 +211,7 @@ LSTAGE_EXPORTAPI int luaopen_lstage_channel(lua_State *L);
 
 static const struct luaL_Reg LuaExportFunctions[] = {
 	{"_VERSION",lstage_version},
+	{"throughput",lstage_getthroughput},	
 	{"now",lstage_gettime},
 	{"cpus",lstage_cpus},
 	{"getmetatable",lstage_getmetatable},

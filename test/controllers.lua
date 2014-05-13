@@ -1,6 +1,7 @@
 local lstage = require 'lstage'
 local srpt   = require 'lstage.controllers.srpt'
 local mg1    = require 'lstage.controllers.mg1'
+local seda   = require 'lstage.controllers.seda'
 
 -- Creating stages table
 local policy = "MG1"
@@ -57,6 +58,18 @@ if (policy == "MG1") then
 
 	-- Configuring priority between stages
 	mg1.configure(stages, cores, 1)
+end
+
+-- =============================================
+-- DBR
+-- =============================================
+if (policy == "SEDA") then
+	-- Creating stages table
+	stages[1] = stage1
+	stages[2] = stage2
+
+	-- Configuring priority between stages
+	seda.configure(stages, cores)
 end
 
 for i=1,10 do

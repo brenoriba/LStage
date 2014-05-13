@@ -220,6 +220,7 @@ static int stage_destroyinstances(lua_State * L) {
 	return 1;
 }
 
+// Create list of instances for each stage
 static int stage_instantiate(lua_State * L) {
 	stage_t s = lstage_tostage(L, 1);
 	if(s->pool==NULL) luaL_error(L,"Stage must be associated to a pool");
@@ -227,12 +228,16 @@ static int stage_instantiate(lua_State * L) {
 	int n=lua_tointeger(L,2);
 	int i;
 	if(n<=0) luaL_error(L,"Argument must be grater than zero");
+
 	/*TODO warning thread_unsafe, mutex needed (or use it in only one thread)*/
 	if(lstage_lfqueue_getcapacity(s->instances)>=0) 
 		lstage_lfqueue_setcapacity(s->instances,lstage_lfqueue_getcapacity(s->instances)+n);
+	
+	// Creating new instances
 	for(i=0;i<n;i++) {
 		(void)lstage_newinstance(s);
 	}
+
 	/*unlock mutex */
 	lua_pushvalue(L,1);
 	return 1;
@@ -260,11 +265,27 @@ static int stage_getpool(lua_State * L) {
 	return 1;
 }
 
+// Set a new pool to the stage
 static int stage_setpool(lua_State * L) {
 	stage_t s = lstage_tostage(L, 1);
 	pool_t p=lstage_topool(L, 2);
 	s->pool=p;
 	return 0;
+}
+
+// Get stage throughput
+static long int stage_throughput (lua_State * L) {
+	stage_t s           = lstage_tostage(L, 1);
+	int     elapsedTime = now_secs() - s->init_time;
+	int     avg 	    = 0;
+
+	if (elapsedTime > 0) {
+		avg = (s->processed / elapsedTime);
+		avg = (long int)(avg*1000000);
+	}
+
+	lua_pushinteger(L,avg);
+	return 1;
 }
 
 // Set stage priority
@@ -279,7 +300,7 @@ static int stage_setpriority(lua_State * L) {
 // Get stage priority
 static int stage_getpriority(lua_State * L) {
 	stage_t s = lstage_tostage(L, 1);
-	lua_pushinteger(L,s->priority);
+	lua_pushinteger(L,s->processed);
 	return 1;
 }
 
@@ -316,6 +337,7 @@ static const struct luaL_Reg StageMetaFunctions[] = {
 		{"disable",stage_disable},
 		{"enable",stage_enable},
 		{"active",stage_active},
+		{"throughput",stage_throughput},
 		{NULL,NULL}
 };
 
@@ -387,6 +409,7 @@ static int lstage_newstage(lua_State * L) {
 	   (*stage)->env_len=len;
 	}
 
+	(*stage)->init_time=now_secs();
 	(*stage)->pool=lstage_defaultpool;
 	(*stage)->priority=0;
 	(*stage)->enabled=1;

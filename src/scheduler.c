@@ -122,6 +122,8 @@ static void thread_resume_instance(instance_t i) {
 				lua_pushcfunction(L,mar_decode);
 				lua_pushlstring(L,i->ev->data,i->ev->len);
 		      
+				// Increment processed count - used to build statistics
+				i->stage->processed++;
 				lstage_destroyevent(i->ev);
 				i->ev=NULL;
 				

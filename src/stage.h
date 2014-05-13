@@ -28,6 +28,8 @@ struct lstage_Stage {
    LFqueue_t instances;
    LFqueue_t event_queue;
    pool_t pool;
+   int init_time;
+   int processed;
    int enabled;
    int globalQueue;
    char * env;
