@@ -34,12 +34,12 @@ void lstage_lfqueue_push(LFqueue_t q,void ** source) {
 }
 
 int lstage_lfqueue_try_push_(LFqueue_t q,void ** source) {
-	__ptr p;
+   __ptr p;
    p=*source;
    return q->queue->try_push(p);
 }
 
-int lstage_lfqueue_try_pop_(LFqueue_t q, void ** destination) {
+int lstage_lfqueue_try_pop_(LFqueue_t q, void ** destination) {   
    __ptr dest;
    if(q->queue->try_pop(dest)) {
       *destination = dest;

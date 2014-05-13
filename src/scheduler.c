@@ -113,39 +113,48 @@ static void thread_resume_instance(instance_t i) {
 		      fprintf(stderr,"Error resuming instance: %s\n",err);
 		   }
 		   break;
+		   
+		// Ready to execute event
 		case I_READY:
-			if(i->ev) {
+			if(i->ev) {				
 				lua_pushliteral(L,STAGE_HANDLER_KEY);
 				lua_gettable(L,LUA_REGISTRYINDEX);
-		      lua_pushcfunction(L,mar_decode);
-		      lua_pushlstring(L,i->ev->data,i->ev->len);
+				lua_pushcfunction(L,mar_decode);
+				lua_pushlstring(L,i->ev->data,i->ev->len);
 		      
-		      lstage_destroyevent(i->ev);
-  		      i->ev=NULL;
+				lstage_destroyevent(i->ev);
+				i->ev=NULL;
+				
 				if(lua_pcall(L,1,1,0)) {
 					const char * err=lua_tostring(L,-1);
-			      fprintf(stderr,"Error decoding event: %s\n",err);
-			      break;
+					fprintf(stderr,"Error decoding event: %s\n",err);
+					break;
 				}
+				
 				int n=
 				#if LUA_VERSION_NUM < 502
 					luaL_getn(L,2);
-			   #else
+				#else
 					luaL_len(L,2);
 				#endif
+				
 				int j;
-				for(j=1;j<=n;j++) lua_rawgeti(L,2,j);
+				for(j=1;j<=n;j++) 
+					lua_rawgeti(L,2,j);
+
 				lua_remove(L,2);
 				i->args=n;
+				
 			} else {
 				lua_pushliteral(L,STAGE_HANDLER_KEY);
 				lua_gettable(L,LUA_REGISTRYINDEX);
 				i->args=0;
 			}
+			
 			if(lua_pcall(L,i->args,0,0)) {
-		      const char * err=lua_tostring(L,-1);
-		      fprintf(stderr,"Error resuming instance: %s\n",err);
-		   } 
+				const char * err=lua_tostring(L,-1);
+				fprintf(stderr,"Error resuming instance: %s\n",err);
+			} 
 			break;
 		case I_WAITING_EVENT:
 			return;
@@ -167,25 +176,33 @@ static void thread_resume_instance(instance_t i) {
 	}
 }
 
-/*thread main loop*/
+// Thread main loop - called when a new thread is created
+// pool.c - "pool_addthread"
 static THREAD_RETURN_T THREAD_CALLCONV thread_mainloop(void *t_val) {
    instance_t i=NULL;
    thread_t self=(thread_t)t_val;
+
    while(1) {
    	_DEBUG("Thread %p wating for ready instaces\n",self);
    	self->state=THREAD_IDLE;
-      lstage_pqueue_pop(self->pool->ready,&i);
-      if(i==NULL) break;
+        lstage_pqueue_pop(self->pool->ready,&i);
+
+	// No instance
+        if(i==NULL) {
+    		break;
+	}
+
      	_DEBUG("Thread %p got a ready instace %p\n",self,i);
      	self->state=THREAD_RUNNING;
-      thread_resume_instance(i);
+      	thread_resume_instance(i);
    }
+
    self->state=THREAD_DESTROYED;
-  	_DEBUG("Thread %p quitting\n",self);
-  	self->pool->size--; //TODO atomic
+   _DEBUG("Thread %p quitting\n",self);
+   self->pool->size--; //TODO atomic
+
    return t_val;
 }
-
 
 int lstage_newthread(lua_State *L,pool_t pool) {
 	_DEBUG("Creating new thread for pool %p\n",pool);
@@ -211,7 +228,7 @@ static int thread_from_ptr (lua_State *L) {
    return 1;
 }
 
-void lstage_pushinstance(instance_t i) {
+void lstage_pushinstance(instance_t i) {	
 	return lstage_pqueue_push(i->stage->pool->ready,(void **) &(i));
 }
 

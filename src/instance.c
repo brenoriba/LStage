@@ -57,16 +57,18 @@ instance_t lstage_newinstance(stage_t s) {
 	return i;
 }
 
-void lstage_putinstance(instance_t i) {
+void lstage_putinstance(instance_t i) {	
 	event_t ev=NULL;
 	_DEBUG("Putting instance %p\n",i);
-		//TODO maybe put a spinlock here
+	
+	//TODO maybe put a spinlock here
 	if(lstage_lfqueue_try_pop(i->stage->event_queue,&ev)) {
 		_DEBUG("HAS event %p\n",i);
 		i->ev=ev;
 		i->flags=I_READY;
 		return lstage_pushinstance(i);
 	}
+
 	i->flags=I_IDLE;
 	_DEBUG("instance is now I_IDLE %p lua_State %p (%u)\n",i,i->L,lstage_lfqueue_size(i->stage->instances));
 	if(!lstage_lfqueue_try_push(i->stage->instances,&i)) {
