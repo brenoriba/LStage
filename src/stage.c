@@ -274,14 +274,13 @@ static int stage_setpool(lua_State * L) {
 }
 
 // Get stage throughput
-static long int stage_throughput (lua_State * L) {
+static int stage_throughput (lua_State * L) {
 	stage_t s           = lstage_tostage(L, 1);
 	int     elapsedTime = now_secs() - s->init_time;
 	int     avg 	    = 0;
 
 	if (elapsedTime > 0) {
 		avg = (s->processed / elapsedTime);
-		avg = (long int)(avg*1000000);
 	}
 
 	lua_pushinteger(L,avg);
@@ -410,6 +409,7 @@ static int lstage_newstage(lua_State * L) {
 	}
 
 	(*stage)->init_time=now_secs();
+	(*stage)->processed=0;
 	(*stage)->pool=lstage_defaultpool;
 	(*stage)->priority=0;
 	(*stage)->enabled=1;

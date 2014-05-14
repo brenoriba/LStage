@@ -8,6 +8,11 @@
 #include <event2/event.h>
 
 #include <time.h>
+#include <pthread.h>
+
+// Define LOCK and UNLOCK
+#define LOCK(q) while (__sync_lock_test_and_set(&(q)->lock,1)) {}
+#define UNLOCK(q) __sync_lock_release(&(q)->lock);
 
 //static LFqueue_t ready_queue=NULL;
 
@@ -122,8 +127,6 @@ static void thread_resume_instance(instance_t i) {
 				lua_pushcfunction(L,mar_decode);
 				lua_pushlstring(L,i->ev->data,i->ev->len);
 		      
-				// Increment processed count - used to build statistics
-				i->stage->processed++;
 				lstage_destroyevent(i->ev);
 				i->ev=NULL;
 				
@@ -147,6 +150,12 @@ static void thread_resume_instance(instance_t i) {
 				lua_remove(L,2);
 				i->args=n;
 				
+				// Increment processed count - used to build statistics
+				i->stage->lock=0;
+				LOCK(i->stage);
+				i->stage->processed++;
+				UNLOCK(i->stage);
+
 			} else {
 				lua_pushliteral(L,STAGE_HANDLER_KEY);
 				lua_gettable(L,LUA_REGISTRYINDEX);

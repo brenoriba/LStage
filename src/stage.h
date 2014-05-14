@@ -25,18 +25,18 @@ enum stage_flag_t {
 
 // Stage struct
 struct lstage_Stage {
-   LFqueue_t instances;
-   LFqueue_t event_queue;
-   pool_t pool;
-   int init_time;
-   int processed;
-   int enabled;
-   int globalQueue;
+   LFqueue_t instances;   // Instances queue
+   LFqueue_t event_queue; // Events queue (when we don't have instances to run)
+   pool_t pool; 	  // Stage pool
+   int init_time; 	  // Stage creation time
+   int processed; 	  // Number of events processed
+   int enabled; 	  // If the stage is enabled or disabled to receive new queries
    char * env;
    size_t env_len;
    volatile unsigned int flags;
    volatile int priority;
    stage_t parent;
+   int lock;
 };
 
 stage_t lstage_tostage(lua_State *L, int i);
