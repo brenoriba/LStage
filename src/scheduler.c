@@ -14,8 +14,6 @@
 #define LOCK(q) while (__sync_lock_test_and_set(&(q)->lock,1)) {}
 #define UNLOCK(q) __sync_lock_release(&(q)->lock);
 
-//static LFqueue_t ready_queue=NULL;
-
 static int thread_tostring (lua_State *L) {
   thread_t * t = luaL_checkudata (L, 1, LSTAGE_THREAD_METATABLE);
   lua_pushfstring (L, "Thread (%p)", *t);

@@ -11,7 +11,7 @@ local cores  = lstage.cpus() * 2
 local stage1=lstage.stage(
 	function() 
 		local a = 0
-		for variable = 0, 10000000 do
+		for variable = 0, 100000000 do
 			a = a + 1
 			local b = a
 		end	
@@ -21,7 +21,7 @@ local stage1=lstage.stage(
 local stage2=lstage.stage(
 	function()
 		local a = 0
-		for variable = 0, 10000000 do
+		for variable = 0, 100000000 do
 			a = a + 1
 			local b = a
 		end	

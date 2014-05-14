@@ -113,7 +113,7 @@ static int stage_push(lua_State *L) {
    size_t len;
    const char * str=lua_tolstring(L,-1,&len);
    lua_pop(L,1);
-   event_t ev=lstage_newevent(str,len);
+   event_t ev=lstage_newevent(str,len);   
    instance_t ins=NULL;
 
    // Check if we have instances to execute event
