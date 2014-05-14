@@ -28,7 +28,7 @@ struct lstage_Stage {
    LFqueue_t instances;   // Instances queue
    LFqueue_t event_queue; // Events queue (when we don't have instances to run)
    pool_t pool; 	  // Stage pool
-   int init_time; 	  // Stage creation time to measure threshold (processed_count / now - init_time)
+   int init_time; 	  // Stage creation time to measure throughput (processed_count / now - init_time)
    int processed; 	  // Number of events processed
    int enabled; 	  // If the stage is enabled or disabled to receive new queries
    char * env;
