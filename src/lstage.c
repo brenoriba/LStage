@@ -197,7 +197,7 @@ static int lstage_cpus(lua_State *L) {
    return 1;
 }
 
-// Get CPU usage in pertentage
+// Get CPU usage in percentage
 static int lstage_cpu_usage(lua_State *L) {
 	struct timeval wall_now;
 	gettimeofday(&wall_now, NULL);
