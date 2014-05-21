@@ -6,7 +6,7 @@ local seda   = require 'lstage.controllers.seda'
 -- Creating stages table
 local policy = "MG1"
 local stages = {}
-local cores  = lstage.cpus() * 2
+local cores  = lstage.cpus()
 
 local stage1=lstage.stage(
 	function() 

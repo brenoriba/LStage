@@ -4,6 +4,12 @@
 #include <event2/event.h>
 #include <event2/thread.h>
 #include <unistd.h>
+#include <time.h>
+
+// To measure CPU usage
+#include <stdint.h>
+#include <sys/time.h>
+#include <sys/resource.h>
 
 #include "lstage.h"
 #include "marshal.h"
@@ -17,6 +23,11 @@ struct event_base *lstage_event_base=NULL;
  * Event system callbacks
  */
 static lua_State * L_main;
+
+// Used to measure CPU usage
+static struct timeval wall_start;
+static clock_t cpu_start;
+static int cpus_count;
 
 #ifdef DEBUG
 //can be found here  http://www.lua.org/pil/24.2.3.html
@@ -186,6 +197,24 @@ static int lstage_cpus(lua_State *L) {
    return 1;
 }
 
+// Get CPU usage in pertentage
+static int lstage_cpu_usage(lua_State *L) {
+	struct timeval wall_now;
+	gettimeofday(&wall_now, NULL);
+
+	// Wall time
+	double start = wall_start.tv_sec + wall_start.tv_usec / 1000000;
+	double stop = wall_now.tv_sec + wall_now.tv_usec / 1000000;
+	double wall_time = stop - start;
+
+	// CPU time
+	double cpu_time = ((double) (clock() - cpu_start)) / cpus_count / CLOCKS_PER_SEC;
+	double percentage = cpu_time / wall_time;
+
+	lua_pushnumber(L,percentage * 100);
+	return 1;
+}
+
 static void lstage_require(lua_State *L, const char *lib, lua_CFunction func) {
 #if LUA_VERSION_NUM < 502 
 	lua_getglobal(L,"require");
@@ -206,6 +235,7 @@ static const struct luaL_Reg LuaExportFunctions[] = {
 	{"_VERSION",lstage_version},
 	{"now",lstage_gettime},
 	{"cpus",lstage_cpus},
+	{"cpu_usage",lstage_cpu_usage},
 	{"getmetatable",lstage_getmetatable},
 	{"setmetatable",lstage_setmetatable},
 	{"self",lstage_getself},
@@ -217,6 +247,11 @@ static const struct luaL_Reg LuaExportFunctions[] = {
 pool_t lstage_defaultpool=NULL;
 
 LSTAGE_EXPORTAPI int luaopen_lstage(lua_State *L) {
+        // To measure CPU usage
+	gettimeofday(&wall_start, NULL);
+	cpu_start = clock();
+	cpus_count = get_cpus();
+
 	lua_newtable(L);
 	lstage_require(L,"lstage.pool",luaopen_lstage_pool);	
 	lua_getfield(L,-1,"new");
