@@ -256,6 +256,7 @@ void lstage_buildstage(lua_State * L,stage_t t) {
    lua_setmetatable(L,-2);
 }
 
+// Get stage thread pool
 static int stage_getpool(lua_State * L) {
 	stage_t s = lstage_tostage(L, 1);
 	if(s->pool)

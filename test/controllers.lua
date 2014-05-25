@@ -1,10 +1,11 @@
-local lstage = require 'lstage'
-local srpt   = require 'lstage.controllers.srpt'
-local mg1    = require 'lstage.controllers.mg1'
-local seda   = require 'lstage.controllers.seda'
+local lstage  = require 'lstage'
+local srpt    = require 'lstage.controllers.srpt'
+local mg1     = require 'lstage.controllers.mg1'
+local dynamic = require 'lstage.controllers.dynamic'
+local seda    = require 'lstage.controllers.seda'
 
 -- Creating stages table
-local policy = "MG1"
+local policy = "DYNAMIC"
 local stages = {}
 local cores  = lstage.cpus()
 
@@ -70,6 +71,27 @@ if (policy == "SEDA") then
 
 	-- Configuring priority between stages
 	seda.configure(stages, cores)
+end
+
+-- =============================================
+-- DYNAMIC
+-- =============================================
+if (policy == "DYNAMIC") then
+	-- Creating stages table
+	stages[1] 		 = {}
+	stages[1].minThreads 	 = 1
+	stages[1].maxThreads 	 = 2
+	stages[1].queueThreshold = 2	
+	stages[1].stage		 = stage1
+
+	stages[2] 		 = {}
+	stages[2].minThreads 	 = 1
+	stages[2].maxThreads 	 = 2
+	stages[2].queueThreshold = 2	
+	stages[2].stage		 = stage2
+
+	-- Configuring priority between stages
+	dynamic.configure(stages, 2)
 end
 
 for i=1,10 do

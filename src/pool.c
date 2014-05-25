@@ -45,8 +45,8 @@ static int pool_addthread(lua_State * L) {
 }
 
 static int pool_size(lua_State * L) {
-	pool_t s = lstage_topool(L, 1);
-	lua_pushinteger(L,s->size);
+	pool_t pool = lstage_topool(L, 1);
+	lua_pushinteger(L,pool->size);
 	return 1;
 }
 
