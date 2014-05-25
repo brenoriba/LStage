@@ -66,20 +66,28 @@ on_timer=function(id)
 		return
 	end
 
+	-- Initialize vars
+	local current 	  = nil
+	local stage 	  = nil
+	local queueSize   = nil
+	local currentPool = nil
+	local poolSize    = nil
+
 	-- Check stage's queue
 	for index=1,#stages do
-		local current 	  = stages[index]
-		local stage 	  = current.stage
-		local queueSize   = stage:size()
-		local currentPool = current.pool
+		current     = stages[index]
+		stage 	    = current.stage
+		queueSize   = stage:size()
+		currentPool = current.pool
+		poolSize    = currentPool:size()
 
 		-- Check queue threshold and compare current pool size with
 		-- max number of threads per stage
-		if (queueSize >= current.queueThreshold and currentPool:size() < current.maxThreads) then
+		if (queueSize >= current.queueThreshold and poolSize < current.maxThreads) then
 			-- We have to add one more thread		
 			currentPool:add(1)
 		-- Stage is IDLE - so we have to kill a thread
-		elseif (queueSize == 0 and currentPool:size() > current.minThreads) then
+		elseif (queueSize == 0 and poolSize > current.minThreads) then
 			currentPool:kill()
 		end
 	end
