@@ -61,6 +61,11 @@ end
 	<param name="id">Timer ID</param>
 ]]--
 on_timer=function(id)
+	-- Validate ID number
+	if (id ~= 100) then
+		return
+	end
+
 	local pollingTable = {}
 
 	-- Get queue size

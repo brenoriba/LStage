@@ -44,9 +44,10 @@ function dynamic.configure (stagesTable, refreshSeconds)
 		-- New pool
 		local currentPool=pool.new(0)
 		currentPool:add(stages[index].minThreads)
-		
+
 		-- Set this pool to stage
 		stages[index].stage:setpool(currentPool)
+		stages[index].pool = currentPool
 	end
 
 	-- Every "refreshSeconds" with ID = 100
@@ -60,12 +61,17 @@ end
 	<param name="id">Timer ID</param>
 ]]--
 on_timer=function(id)
+	-- Validate ID number
+	if (id ~= 100) then
+		return
+	end
+
 	-- Check stage's queue
 	for index=1,#stages do
 		local current 	  = stages[index]
 		local stage 	  = current.stage
-		local queueSize   = stage:size() - stage:instancesize()
-		local currentPool = stage.pool
+		local queueSize   = stage:size()
+		local currentPool = current.pool
 
 		-- Check queue threshold and compare current pool size with
 		-- max number of threads per stage
@@ -73,8 +79,8 @@ on_timer=function(id)
 			-- We have to add one more thread		
 			currentPool:add(1)
 		-- Stage is IDLE - so we have to kill a thread
-		elseif (queueSize == 0) then
-			--currentPool:kill()
+		elseif (queueSize == 0 and currentPool:size() > current.minThreads) then
+			currentPool:kill()
 		end
 	end
 end

@@ -52,8 +52,7 @@ static int pool_size(lua_State * L) {
 
 static int pool_killthread(lua_State * L) {
 	pool_t pool=lstage_topool(L, 1);
-	void *a=NULL;
-	lstage_pqueue_push(pool->ready,a);
+	lstage_pqueue_push(pool->ready,NULL);
 	return 0;
 }
 
