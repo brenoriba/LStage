@@ -84,7 +84,7 @@ on_timer=function(id)
 		-- Check queue threshold and compare current pool size with
 		-- max number of threads per stage
 		if (queueSize >= current.queueThreshold and poolSize < current.maxThreads) then
-			-- We have to add one more thread		
+			-- We have to add one more thread	
 			currentPool:add(1)
 		-- Stage is IDLE - so we have to kill a thread
 		elseif (queueSize == 0 and poolSize > current.minThreads) then
