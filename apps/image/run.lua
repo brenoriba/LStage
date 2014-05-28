@@ -12,8 +12,10 @@
 	**********************************************************************************************
 ]]--
 
-local lstage = require 'lstage'
-local files  = require 'files'
+--local imlib  = require 'imlib2'
+local treatments = require 'treatments'
+local lstage     = require 'lstage'
+local files      = require 'files'
 
 -- Stage that will receive images path
 local stage_get_files=lstage.stage(
