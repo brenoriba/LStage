@@ -29,7 +29,7 @@ function files.getImages (path)
         	local relative=path..'/'..img
 		if lfs.attributes(relative,"mode") == "file" then
           		if string.match(img,".*jpg") then
-                		imgs[#imgs+1] = relative
+                		imgs[#imgs+1] = img
 			end
 		end
 	end

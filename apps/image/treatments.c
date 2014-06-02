@@ -21,15 +21,40 @@
 #include "lua.h"
 #include "lauxlib.h"
 
-// Load image
-static int treatments_load_image (lua_State * L) {
-	lua_pushnumber(L,10);
-	return 1;   
+// Get metatable by name
+int image_getmetatable(lua_State *L) {
+   if(lua_type(L,1)==LUA_TSTRING) {
+      const char *tname=lua_tostring(L,1);
+      luaL_getmetatable(L,tname);
+   } else {
+      if(!lua_getmetatable (L,1)) {
+         lua_pushnil(L);
+         lua_pushliteral(L,"Metatable not found for the provided value");
+         return 2;
+      }
+   }
+   return 1;
 }
 
+// Grayscale filter
+static int treatments_grayscale (lua_State * L) {
+	void *ptr;
+	//ptr=lua_touserdata(L,1);
+	if(ptr) {
+		lua_pushnumber(L,10);
+		return 1;   
+	}
+	else {
+		lua_pushnumber(L,1);
+		return 1;   
+	}
+}
+
+// Functions to register
 static const luaL_Reg RegisterFunctions[] =
 {
-    { "load", treatments_load_image },
+    {"grayscale", treatments_grayscale},
+    {"getmetatable", image_getmetatable},
     { NULL, NULL }
 };
 
