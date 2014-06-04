@@ -1,6 +1,6 @@
-local treatments = require 'treatments'
+local filters = require 'filters'
 local M=require("imlib2")
-local meta=treatments.getmetatable('imlib2.image')
+local meta=filters.getmetatable('imlib2.image')
 if meta then
    meta.__wrap = function (img)
       local ptr=img:to_ptr()

@@ -12,9 +12,9 @@
 	**********************************************************************************************
 ]]--
 
-local treatments = require 'treatments'
-local lstage     = require 'lstage'
-local files      = require 'files'
+local filters = require 'filters'
+local lstage  = require 'lstage'
+local files   = require 'files'
 
 -- Timers
 local start = lstage.now()
@@ -28,13 +28,30 @@ local stage_save_img=lstage.stage(
 		if (err) then
 			print(err)
 		end
+
+		-- Check if we saved all images
+		if (false) then
+			print("[Done] "..lstage.now() - start.." secs")
+		end
 	end,1)
 
 -- Apply blur in image
-local stage_blur_img=lstage.stage(
+local stage_grayscale_img=lstage.stage(
 	function(img, outpath)
-		img.blur(img,1)
-		stage_save_img:push(img, outpath)
+		local filters = require 'filters'
+		local imlib2  = require "imlib2_image"
+
+		-- Get image dimensions
+		local w = img:get_width()
+		local h = img:get_height()
+
+		-- Apply grayscale filter
+		local grayImg = filters.grayscale(img:get_data(),w,h)
+         	local newImg  = imlib2.image.new(w,h)
+	        newImg:from_str(grayImg)
+
+		-- Push into another stage
+		stage_save_img:push(newImg, outpath)
 	end,1)
 
 -- Stage that will load images
@@ -48,7 +65,7 @@ local stage_load_img=lstage.stage(
 		if not (img) then
 			print(err)
 		else
-			stage_blur_img:push(img, outpath.."/"..file)
+			stage_grayscale_img:push(img, outpath.."/"..file)
 		end
 	end,1)
 
@@ -68,4 +85,3 @@ lstage.dispatchevents()
 
 -- Avoid script to close
 lstage.channel():get()
-print("[Done] "..lstage.now() - start.." secs")
