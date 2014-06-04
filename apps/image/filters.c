@@ -49,22 +49,44 @@ static int filters_grayscale (lua_State * L) {
 		return 2;
 	}
 
+	// Pointer to the image
 	void *ptr;
 	ptr=lua_touserdata(L,1);
 	
-	int w,h;
+	int w,h,i,j,channels,step;
 	w=lua_tointeger(L,2);
 	h=lua_tointeger(L,3);
 
 	// Get image
         cv::Mat * img=new cv::Mat(w,h,CV_8UC4,ptr);
 
-	IplImage * dst_img= cvCreateImage(cvSize(w,h), IPL_DEPTH_8U, 4);
-        dst_img->imageData = (char *) img->data;      
+	// Get image data	
+	uchar *data;
+	data = (uchar *)img->data;
 
-	cvErode(dst_img,dst_img,0,2);
-	//cvNot(dst_img,dst_img);
-	//cvCvtColor(img,img,CV_RGB2GRAY);	
+	IplImage * dst_img= cvCreateImage(cvSize(w,h), IPL_DEPTH_8U, 4);
+        dst_img->imageData = (char *) img->data;  
+
+	step = dst_img->widthStep;
+	channels = dst_img->nChannels;
+
+	// Run into image pixels
+	int red,green,blue,avg;
+	for (i=0;i<h;i++) {
+		for (j=0;j<w;j++) {	
+			// GIMP - Grayscale Luminosity (with some changes on average formula)
+			// http://docs.gimp.org/2.6/en/gimp-tool-desaturate.html
+			red   = data[i*step+j*channels+2];
+			green = data[i*step+j*channels+1];
+			blue  = data[i*step+j*channels+0];
+			avg   = (int)((red * 0.3) + (green * 0.59) + (blue * 0.11));
+
+			data[i*step+j*channels+2]=avg; // Red
+			data[i*step+j*channels+0]=avg; // Blue
+		        data[i*step+j*channels+1]=avg; // Green		        
+			data[i*step+j*channels+3]=255; // Alpha
+		}
+	}
 
 	// Return image
 	lua_pushlstring(L,(char *)img->data,w*h*4);
@@ -125,7 +147,7 @@ static int filters_blur(lua_State * L) {
 	IplImage * dst_img= cvCreateImage(cvSize(w,h), IPL_DEPTH_8U, 4);
         dst_img->imageData = (char *) img->data;      
 
-	// Apply threshold	
+	// Apply blur	
 	//cvBlur(dst_img,dst_img,10,maxValue,CV_THRESH_BINARY);
 
 	// Return image
