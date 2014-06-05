@@ -144,11 +144,8 @@ static int filters_blur(lua_State * L) {
 	// Get image
         cv::Mat * img=new cv::Mat(w,h,CV_8UC4,ptr);
 
-	IplImage * dst_img= cvCreateImage(cvSize(w,h), IPL_DEPTH_8U, 4);
-        dst_img->imageData = (char *) img->data;      
-
-	// Apply blur	
-	//cvBlur(dst_img,dst_img,10,maxValue,CV_THRESH_BINARY);
+	// Apply blur
+	GaussianBlur(*img,*img,cv::Size(h,w),0,cv::BORDER_DEFAULT);
 
 	// Return image
 	lua_pushlstring(L,(char *)img->data,w*h*4);

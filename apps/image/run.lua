@@ -12,127 +12,80 @@
 	**********************************************************************************************
 ]]--
 
-local filters = require 'filters'
 local lstage  = require 'lstage'
 local files   = require 'files'
+local imglib  = require 'imglib'
 
 -- Timers
 local start = lstage.now()
 
 -- Stage that will save images
-local stage_save_img=lstage.stage(
+local stage_save=lstage.stage(
 	function(img,outpath)
 		print("[out] "..outpath)
-		local _,err = img.save(img,outpath)		
-		img.free(img)
+		local err = imglib.save(img,outpath)
 		if (err) then
 			print(err)
 		end
-
-		-- Check if we saved all images
-		if (false) then
-			print("[Done] "..lstage.now() - start.." secs")
-		end
 	end,1)
 
 -- Apply threshold in image
-local stage_invert_img=lstage.stage(
+local stage_invert=lstage.stage(
 	function(img,outpath)
-		local filters = require 'filters'
-		local imlib2  = require "imlib2_image"
-
-		-- Get image dimensions
-		local w = img:get_width()
-		local h = img:get_height()
-
-		-- Apply grayscale filter
-		local invertedImg = filters.invert(img:get_data(),w,h)
-         	local newImg  = imlib2.image.new(w,h)
-	        newImg:from_str(invertedImg)
+		-- Invert pixels
+		imglib.invert(img)
 
 		-- Push into another stage
-		stage_save_img:push(img, outpath)
+		stage_save:push(img, outpath)
 	end,1)
 
 -- Apply threshold in image
-local stage_threshold_save_img=lstage.stage(
-	function(img,outpath)
-		local filters = require 'filters'
-		local imlib2  = require "imlib2_image"
-
-		-- Get image dimensions
-		local w = img:get_width()
-		local h = img:get_height()
-
-		-- Apply grayscale filter
-		local thresholdImg = filters.threshold(img:get_data(),w,h,70,600)
-         	local newImg  = imlib2.image.new(w,h)
-	        newImg:from_str(thresholdImg)
+local stage_second_threshold=lstage.stage(	
+	function(img,threshold,maxValue,outpath)
+		imglib.threshold(img,threshold,maxValue)
 
 		-- Push into another stage
-		stage_invert_img:push(img, outpath)
+		stage_invert:push(img, outpath)
 	end,1)
 
 -- Apply threshold in image
-local stage_blur_img=lstage.stage(
+local stage_blur=lstage.stage(
 	function(img,outpath)
 		-- Apply blur (imlib2)
-		img.blur(img,2)
+		imglib.blur(img,2)
 
 		-- Push into another stage
-		stage_threshold_save_img:push(img, outpath)
+		stage_second_threshold:push(img,70,600,outpath)
 	end,1)
 
 -- Apply threshold in image
-local stage_threshold_img=lstage.stage(
-	function(img,outpath)
-		local filters = require 'filters'
-		local imlib2  = require "imlib2_image"
-
-		-- Get image dimensions
-		local w = img:get_width()
-		local h = img:get_height()
-
-		-- Apply grayscale filter
-		local thresholdImg = filters.threshold(img:get_data(),w,h,220,300)
-         	local newImg  = imlib2.image.new(w,h)
-	        newImg:from_str(thresholdImg)
+local stage_first_threshold=lstage.stage(
+	function(img,threshold,maxValue,outpath)		
+		imglib.threshold(img,threshold,maxValue)
 
 		-- Push into another stage
-		stage_blur_img:push(newImg, outpath)
+		stage_blur:push(img, outpath)
 	end,1)
 
 -- Apply grayscale in image
-local stage_grayscale_img=lstage.stage(
+local stage_grayscale=lstage.stage(
 	function(img, outpath)
-		local filters = require 'filters'
-		local imlib2  = require "imlib2_image"
-
-		-- Get image dimensions
-		local w = img:get_width()
-		local h = img:get_height()
-
-		-- Apply grayscale filter
-		local grayImg = filters.grayscale(img:get_data(),w,h)
-         	local newImg  = imlib2.image.new(w,h)
-	        newImg:from_str(grayImg)
+		imglib.grayscale(img)
 
 		-- Push into another stage
-		stage_threshold_img:push(newImg, outpath,false)
+		stage_first_threshold:push(img,220,300,outpath)
 	end,1)
 
 -- Stage that will load images
-local stage_load_img=lstage.stage(
+local stage_load=lstage.stage(
 	function(inpath,outpath,file) 
-		local relative=inpath.."/"..file
-		print("[in] "..relative)
+		print("[in] "..inpath.."/"..file)
 
-		local imlib2=require "imlib2_image"
-		local img,err=imlib2.image.load(relative)
-		if not (img) then
-			print(err)
+		local img,err = imglib.load (inpath,file)
+		if not (err) then
+			stage_grayscale:push(img, outpath.."/"..file)
 		else
-			stage_grayscale_img:push(img, outpath.."/"..file)
+			print(err)
 		end
 	end,1)
 
@@ -144,7 +97,7 @@ local outputDir = "out/"
 local file = files.getImages(inputDir)
 local n = #file
 for i=1,n do
-	stage_load_img:push(inputDir, outputDir, file[i])
+	stage_load:push(inputDir, outputDir, file[i])
 end
 
 -- Dispatch on_timer events
