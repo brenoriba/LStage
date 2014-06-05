@@ -25,14 +25,13 @@ imglib.threshold = function(img,threshold,maxValue)
 	local h = img:get_height()
 
 	-- Apply grayscale filter
-	local thresholdImg = filters.threshold(img:get_data(),w,h,threshold,maxValue)
+	local filteredImg = filters.threshold(img:get_data(),w,h,threshold,maxValue)
         local newImg  = imlib2.image.new(w,h)
-	newImg:from_str(thresholdImg)
+	newImg:from_str(filteredImg)
 end
 
--- Apply blur
+-- Apply blur (imlib2)
 imglib.blur = function(img,blurRate)
-	-- Apply blur (imlib2)
 	img.blur(img,blurRate)
 end
 
@@ -46,9 +45,9 @@ imglib.grayscale = function(img)
 	local h = img:get_height()
 
 	-- Apply grayscale filter
-	local grayImg = filters.grayscale(img:get_data(),w,h)
+	local filteredImg = filters.grayscale(img:get_data(),w,h)
  	local newImg  = imlib2.image.new(w,h)
-        newImg:from_str(grayImg)
+        newImg:from_str(filteredImg)
 end
 
 -- Save image into folder
@@ -81,9 +80,9 @@ imglib.invert = function(img)
 	local h = img:get_height()
 
 	-- Apply grayscale filter
-	local invertedImg = filters.invert(img:get_data(),w,h)
+	local filteredImg = filters.invert(img:get_data(),w,h)
  	local newImg  = imlib2.image.new(w,h)
-        newImg:from_str(invertedImg)
+        newImg:from_str(filteredImg)
 end
 
 return imglib

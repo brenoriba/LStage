@@ -12,14 +12,19 @@
 	**********************************************************************************************
 ]]--
 
-local lstage  = require 'lstage'
-local files   = require 'files'
-local imglib  = require 'imglib'
+local lstage  = require 'lstage' -- Lstage namespace
+local files   = require 'files'	 -- lfs (luafilesystem) namespace
+local imglib  = require 'imglib' -- Image treatments namespace
+
+-- Input and output directory 
+-- Change this if you want to get images from another folder
+local inputDir  = "in/"
+local outputDir = "out/"
 
 -- Timers
 local start = lstage.now()
 
--- Stage that will save images
+-- Save images
 local stage_save=lstage.stage(
 	function(img,outpath)
 		print("[out] "..outpath)
@@ -29,7 +34,7 @@ local stage_save=lstage.stage(
 		end
 	end,1)
 
--- Apply threshold in image
+-- Apply invert
 local stage_invert=lstage.stage(
 	function(img,outpath)
 		-- Invert pixels
@@ -39,7 +44,7 @@ local stage_invert=lstage.stage(
 		stage_save:push(img, outpath)
 	end,1)
 
--- Apply threshold in image
+-- Apply the second threshold
 local stage_second_threshold=lstage.stage(	
 	function(img,threshold,maxValue,outpath)
 		imglib.threshold(img,threshold,maxValue)
@@ -48,7 +53,7 @@ local stage_second_threshold=lstage.stage(
 		stage_invert:push(img, outpath)
 	end,1)
 
--- Apply threshold in image
+-- Apply blur
 local stage_blur=lstage.stage(
 	function(img,outpath)
 		-- Apply blur (imlib2)
@@ -58,7 +63,7 @@ local stage_blur=lstage.stage(
 		stage_second_threshold:push(img,70,600,outpath)
 	end,1)
 
--- Apply threshold in image
+-- Apply first threshold (there are 2)
 local stage_first_threshold=lstage.stage(
 	function(img,threshold,maxValue,outpath)		
 		imglib.threshold(img,threshold,maxValue)
@@ -67,7 +72,7 @@ local stage_first_threshold=lstage.stage(
 		stage_blur:push(img, outpath)
 	end,1)
 
--- Apply grayscale in image
+-- Apply grayscale
 local stage_grayscale=lstage.stage(
 	function(img, outpath)
 		imglib.grayscale(img)
@@ -76,7 +81,7 @@ local stage_grayscale=lstage.stage(
 		stage_first_threshold:push(img,220,300,outpath)
 	end,1)
 
--- Stage that will load images
+-- Load images from disk
 local stage_load=lstage.stage(
 	function(inpath,outpath,file) 
 		print("[in] "..inpath.."/"..file)
@@ -88,10 +93,6 @@ local stage_load=lstage.stage(
 			print(err)
 		end
 	end,1)
-
--- Input and output directory
-local inputDir  = "in/"
-local outputDir = "out/"
 
 -- Get all images path and push into first stage's queue
 local file = files.getImages(inputDir)
