@@ -50,7 +50,7 @@ if (policy == "SRPT") then
 end
 
 -- =============================================
--- DBR
+-- MG1
 -- =============================================
 if (policy == "MG1") then
 	-- Creating stages table

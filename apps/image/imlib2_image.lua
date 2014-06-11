@@ -1,3 +1,12 @@
+--[[
+	**************************************** PUC-RIO 2014 ****************************************
+
+	Implemented by Breno Riba		
+	On May 2014
+	   
+	**********************************************************************************************
+]]--
+
 local filters = require 'filters'
 local M=require("imlib2")
 local meta=filters.getmetatable('imlib2.image')

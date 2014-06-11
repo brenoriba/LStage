@@ -1,13 +1,8 @@
 --[[
 	**************************************** PUC-RIO 2014 ****************************************
 
-	Implemented by: 
-		- Ana Lúcia de Moura
-		- Breno Riba
-		- Noemi Rodriguez   
-		- Tiago Salmito
-		
-	Implemented on May 2014
+	Implemented by Breno Riba		
+	On May 2014
 	   
 	**********************************************************************************************
 ]]--
@@ -25,9 +20,7 @@ imglib.threshold = function(img,threshold,maxValue)
 	local h = img:get_height()
 
 	-- Apply grayscale filter
-	local filteredImg = filters.threshold(img:get_data(),w,h,threshold,maxValue)
-        local newImg  = imlib2.image.new(w,h)
-	newImg:from_str(filteredImg)
+	filters.threshold(img:get_data(),w,h,threshold,maxValue)        
 end
 
 -- Apply blur (imlib2)
@@ -45,15 +38,15 @@ imglib.grayscale = function(img)
 	local h = img:get_height()
 
 	-- Apply grayscale filter
-	local filteredImg = filters.grayscale(img:get_data(),w,h)
- 	local newImg  = imlib2.image.new(w,h)
-        newImg:from_str(filteredImg)
+	filters.grayscale(img:get_data(),w,h) 	
 end
 
 -- Save image into folder
-imglib.save = function(img,outpath)
+imglib.save = function(img,outpath,freeImg)
 	local _,err = img.save(img,outpath)
-	img.free(img)
+	if (freeImg) then
+		img.free(img)
+	end
 	return err
 end
 
@@ -80,9 +73,7 @@ imglib.invert = function(img)
 	local h = img:get_height()
 
 	-- Apply grayscale filter
-	local filteredImg = filters.invert(img:get_data(),w,h)
- 	local newImg  = imlib2.image.new(w,h)
-        newImg:from_str(filteredImg)
+	filters.invert(img:get_data(),w,h) 	
 end
 
 return imglib
