@@ -8,6 +8,7 @@
 ]]--
 
 -- Controllers
+local lstage  = require 'lstage'
 local srpt    = require 'lstage.controllers.srpt'
 local mg1     = require 'lstage.controllers.mg1'
 local dynamic = require 'lstage.controllers.dynamic'
@@ -32,7 +33,7 @@ end
 -- MG1 configure method
 wrapper.mg1 = function (stagesTable, threads)
 	-- stagesTable, numberOfThreads, refreshSeconds
-	mg1.configure(stagesTable, threads, 0.5)
+	mg1.configure(stagesTable, threads, 1)
 end
 
 -- SEDA configure method
@@ -48,13 +49,13 @@ wrapper.dynamic = function (stagesTable, threads)
 	for ix=1,#stages do
 		stages[1] 		 = {}
 		stages[1].minThreads 	 = threads
-		stages[1].maxThreads 	 = threads + math.ceil(threads * 0.3)
-		stages[1].queueThreshold = 100
+		stages[1].maxThreads 	 = threads + math.ceil(threads * 0.1)
+		stages[1].queueThreshold = 5
 		stages[1].stage		 = stagesTable[ix]
 	end
 
 	-- stagesTable, refreshSeconds
-	seda.configure(stages, 0.5)
+	dynamic.configure(stages, 1)
 end
 
 -- Configure policy
@@ -62,22 +63,27 @@ wrapper.configure = function (stages, policy, threads)
 	print("\n*********************************")
 
 	if (policy == "SRPT") then
-		print("Creating "..threads.." threads")
+		print("Creating "..threads.." thread(s)")
 		wrapper.srpt (stages, threads)
 	elseif (policy == "MG1") then
-		print("Creating "..threads.." threads")
+		print("Creating "..threads.." thread(s)")
 		wrapper.mg1 (stages, threads)
 	elseif (policy == "SEDA") then
 		threads = threads / #stages
-		print("Creating "..threads.." threads per stage")
+		print("Creating "..threads.." thread(s) per stage")
 		wrapper.seda (stages, threads)
 	elseif (policy == "DYNAMIC") then
 		threads = threads / #stages
-		print("Creating "..threads.." threads per stage")
+		print("Creating "..threads.." thread(s) per stage")
 		wrapper.dynamic (stages, threads)
 	elseif (policy == "COLOR") then
 		-- Do nothing - color policy is the lstage default policy
-		print("Creating "..threads.." threads")
+		print("Creating "..threads.." thread(s)")
+	
+		-- Creating threads
+		for index=1,threads do
+			lstage.pool:add()
+		end
 	end
 
 	print("Configuring ["..policy.."] policy")
