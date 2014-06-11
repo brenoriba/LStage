@@ -7,16 +7,16 @@
 	**********************************************************************************************
 ]]--
 
-local lstage 	  = require 'lstage' 		 -- Lstage namespace
-local files   	  = require 'files'	 	 -- lfs (luafilesystem) namespace
-local imglib 	  = require 'imglib' 		 -- Image treatments namespace
-local controllers = require 'controller_wrapper' -- Controllers manager namespace
+local lstage 	  = require 'lstage' 	  -- Lstage namespace
+local files   	  = require 'files'	  -- lfs (luafilesystem) namespace
+local imglib 	  = require 'imglib' 	  -- Image treatments namespace
+local controllers = require 'controllers' -- Controllers manager namespace
 
 -- Debug project
 local debug  = false
 
 -- Available controllers
--- {SRPT,MG1,SEDA,DYNAMIC}
+-- {SRPT,MG1,SEDA,DYNAMIC,COLOR}
 local policy = "SRPT"
 
 -- Input and output directory 
@@ -25,7 +25,7 @@ local inputDir  = "in/"
 local outputDir = "out/"
 
 -- Number of threads (per stage in case of SEDA and DYNAMIC)
-local threads = 7
+local threads = 14
 
 -- Timers
 local start = lstage.now()
@@ -41,8 +41,10 @@ local stage_save=lstage.stage(
 			print("[stage_save] "..err)
 		end
 
-		local time = lstage.now()-start
-		print("[out] "..relative.." [secs] "..time)
+		if (debug) then
+			local time = lstage.now()-start
+			print("[out] "..relative.." [secs] "..time)
+		end
 	end,threads)
 
 -- Apply invert
@@ -120,7 +122,9 @@ local stage_grayscale=lstage.stage(
 -- Load images from disk
 local stage_load=lstage.stage(
 	function(filename) 
-		print("[in] "..inputDir.."/"..filename)
+		if (debug) then	
+			print("[in] "..inputDir.."/"..filename)
+		end
 
 		local img,err = imglib.load (inputDir,filename)
 		if not (err) then
@@ -128,7 +132,7 @@ local stage_load=lstage.stage(
 		else
 			print("[stage_load] "..err)
 		end
-	end,1)
+	end,threads)
 
 -- Stages table
 local stages = {}
