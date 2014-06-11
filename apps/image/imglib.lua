@@ -25,7 +25,15 @@ end
 
 -- Apply blur (imlib2)
 imglib.blur = function(img,blurRate)
-	img.blur(img,blurRate)
+	local filters = require 'filters'
+	local imlib2  = require "imlib2_image"
+
+	-- Get image dimensions
+	local w = img:get_width()
+	local h = img:get_height()
+
+	-- Apply grayscale filter
+	filters.blur(img:get_data(),w,h,blurRate)
 end
 
 -- Apply grayscale
@@ -45,7 +53,7 @@ end
 imglib.save = function(img,outpath,freeImg)
 	local _,err = img.save(img,outpath)
 	if (freeImg) then
-		img.free(img)
+		--img.free(img)
 	end
 	return err
 end

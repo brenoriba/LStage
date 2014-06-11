@@ -18,7 +18,7 @@ local policy = "SRPT"
 
 -- Input directory 
 -- Change this if you want to get images from another folder
-local inputDir  = "in/in_sample/"
+local inputDir  = "in/in_big/"
 
 -- Number of threads (per stage in case of SEDA and DYNAMIC)
 local threads = 7

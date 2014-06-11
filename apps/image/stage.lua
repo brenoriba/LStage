@@ -98,7 +98,7 @@ stage.blur=lstage.stage(
 			return
 		end
 
-		-- Apply blur (imlib2)
+		-- Apply blur
 		imglib.blur(img,2)
 
 		-- Push into another stage
@@ -171,6 +171,6 @@ stage.load=lstage.stage(
 		else
 			print("[stage_load] "..err)
 		end
-	end,cores)
+	end,1)
 
 return stage
