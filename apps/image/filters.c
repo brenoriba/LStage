@@ -159,7 +159,6 @@ static const luaL_Reg RegisterFunctions[] =
 {
     {"grayscale", filters_grayscale},
     {"threshold", filters_threshold},
-    {"blur", filters_blur},
     {"invert",filters_invert},
     {"getmetatable", image_getmetatable},
     { NULL, NULL }
