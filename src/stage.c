@@ -300,7 +300,7 @@ static int stage_setpriority(lua_State * L) {
 // Get stage priority
 static int stage_getpriority(lua_State * L) {
 	stage_t s = lstage_tostage(L, 1);
-	lua_pushinteger(L,s->processed);
+	lua_pushinteger(L,s->priority);
 	return 1;
 }
 
@@ -332,7 +332,7 @@ static const struct luaL_Reg StageMetaFunctions[] = {
 		{"parent",stage_getparent},
 		{"pool",stage_getpool},
 		{"setpool",stage_setpool},
-		{"priority",stage_getpriority},
+		{"getpriority",stage_getpriority},
 		{"setpriority",stage_setpriority},
 		{"disable",stage_disable},
 		{"enable",stage_enable},

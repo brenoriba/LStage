@@ -88,7 +88,7 @@ on_timer=function(id)
 			currentPool:add(1)
 		-- Stage is IDLE - so we have to kill a thread
 		elseif (queueSize == 0 and poolSize > current.minThreads) then
-			currentPool:kill()
+			--currentPool:kill()
 		end
 	end
 end

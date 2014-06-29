@@ -16,7 +16,8 @@ local outputDir = "out/"
 local debug 	= false
 
 -- How many instances each stage will have
-local cores = lstage.cpus()
+-- (we use the same as the number of threads)
+local instances = 7
 
 -- Timer
 local start = lstage.now()
@@ -42,7 +43,7 @@ stage.save=lstage.stage(
 			local time = lstage.now()-start
 			print("[out] "..relative.." [secs] "..time)
 		--end
-	end,cores)
+	end,instances)
 
 -- Apply invert
 stage.invert={}
@@ -65,7 +66,7 @@ stage.invert=lstage.stage(
 			msg = "[DEBUG][stage_save] Error while saving image "..filename		
 			assert(stage.save:push(img, "invert_"..filename,false), msg)
 		end
-	end,cores)
+	end,instances)
 
 -- Apply the second threshold
 stage.second_threshold={}
@@ -87,7 +88,7 @@ stage.second_threshold=lstage.stage(
 			msg = "[DEBUG][stage_save] Error while saving image "..filename	
 			assert(stage.save:push(img, "second_threshold_"..filename,false), msg)
 		end
-	end,cores)
+	end,instances)
 
 -- Apply blur
 stage.blur={}
@@ -110,7 +111,7 @@ stage.blur=lstage.stage(
 			msg = "[DEBUG][stage_save] Error while saving image "..filename	
 			assert(stage.save:push(img, "blur_"..filename,false), msg)
 		end
-	end,cores)
+	end,instances)
 
 -- Apply first threshold (there are 2)
 stage.first_threshold={}
@@ -132,7 +133,7 @@ stage.first_threshold=lstage.stage(
 			msg = "[DEBUG][stage_save] Error while saving image "..filename
 			assert(stage.save:push(img, "first_threshold_"..filename,false), msg)
 		end
-	end,cores)
+	end,instances)
 
 -- Apply grayscale
 stage.grayscale={}
@@ -154,7 +155,7 @@ stage.grayscale=lstage.stage(
 			msg = "[DEBUG][stage_save] Error while saving image "..filename
 			assert(stage.save:push(img, "grayscale_"..filename,false), msg)
 		end
-	end,cores)
+	end,instances)
 
 -- Load images from disk
 stage.load={}

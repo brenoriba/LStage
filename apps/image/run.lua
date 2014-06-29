@@ -3,7 +3,7 @@
 
 	Implemented by Breno Riba		
 	On May 2014
-	   
+
 	**********************************************************************************************
 ]]--
 
@@ -14,7 +14,7 @@ local stage 	  = require 'stage' 	  -- Project stages
 
 -- Available controllers
 -- {SRPT,MG1,SEDA,DYNAMIC,COLOR}
-local policy = "SRPT"
+local policy = "MG1"
 
 -- Input directory 
 -- Change this if you want to get images from another folder
@@ -34,15 +34,15 @@ stages[5] = stage.second_threshold
 stages[6] = stage.invert
 stages[7] = stage.save
 
--- Configure policy
-controllers.configure(stages,policy,threads)
-
 -- Get all images path and push into first stage's queue
 local file = files.getImages(inputDir)
 local n = #file
 for i=1,n do
 	assert(stage.load:push(inputDir, file[i]),"[stage_load] Error while loading image "..file[i])
 end
+
+-- Configure policy
+controllers.configure(stages,policy,threads)
 
 -- Dispatch on_timer events
 lstage.dispatchevents()

@@ -13,6 +13,7 @@ local srpt    = require 'lstage.controllers.srpt'
 local mg1     = require 'lstage.controllers.mg1'
 local dynamic = require 'lstage.controllers.dynamic'
 local seda    = require 'lstage.controllers.seda'
+local refresh = 5
 local wrapper = {}
 
 -- SRPT configure method
@@ -33,7 +34,7 @@ end
 -- MG1 configure method
 wrapper.mg1 = function (stagesTable, threads)
 	-- stagesTable, numberOfThreads, refreshSeconds
-	mg1.configure(stagesTable, threads, 1)
+	mg1.configure(stagesTable, threads, refresh)
 end
 
 -- SEDA configure method
@@ -55,7 +56,7 @@ wrapper.dynamic = function (stagesTable, threads)
 	end
 
 	-- stagesTable, refreshSeconds
-	dynamic.configure(stages, 1)
+	dynamic.configure(stages, refresh)
 end
 
 -- Configure policy
