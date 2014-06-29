@@ -14,14 +14,14 @@ local stage 	  = require 'stage' 	  -- Project stages
 
 -- Available controllers
 -- {SRPT,MG1,SEDA,DYNAMIC,COLOR}
-local policy = "MG1"
+local policy = "COLOR"
 
 -- Input directory 
 -- Change this if you want to get images from another folder
 local inputDir  = "in/in_big/"
 
 -- Number of threads (per stage in case of SEDA and DYNAMIC)
-local threads = 7
+local threads = 2
 
 -- Stages table
 local stages = {}
