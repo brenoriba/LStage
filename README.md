@@ -32,7 +32,10 @@ sudo make install
 
 To test if the installation was successful type this command:
 
+```
 $ lua -l lstage
+```
+
 You should get the lua prompt if lstage is installed properly or the error message "module 'lstage' not found" if it cannot be loaded 
 
 # Installing Image Processing Project
