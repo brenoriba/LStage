@@ -1,4 +1,4 @@
-#Lstage - Stages concurrency kit for lua
+#Lstage - Stage concurrency kit for lua
 Lstage is a Lua library for bulding parallel, non-linear pipelines based on the concepts of the SEDA (Staged Event-Driven Architecture).
 
 ## Compiling and Installing
@@ -33,9 +33,8 @@ sudo make install
 Install dependencies:
 
 ```
-sudo apt-get install aptitude
+sudo apt-get install aptitude lua-filesystem-dev
 sudo aptitude install libopencv-dev libopencv-highgui-dev libimlib2-dev
-sudo apt-get install lua-filesystem-dev
 ```
 
 Compile:
