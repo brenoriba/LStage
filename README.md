@@ -1,7 +1,7 @@
-#Lstage - Stage concurrency kit for lua
+# Lstage - Stage concurrency kit for lua
 Lstage is a Lua library for bulding parallel, non-linear pipelines based on the concepts of the SEDA (Staged Event-Driven Architecture).
 
-## Compiling and Installing
+# Compiling and Installing
 Lstage is compatible with Lua version 5.1
 
 Leda requires Threading Building Blocks (TBB) to work properly.
@@ -28,7 +28,14 @@ make
 sudo make install
 ```
 
-## Installing Image Processing Project
+# Testing installation
+
+To test if the installation was successful type this command:
+
+$ lua -l lstage
+You should get the lua prompt if lstage is installed properly or the error message "module 'lstage' not found" if it cannot be loaded 
+
+# Installing Image Processing Project
 
 Install dependencies:
 
