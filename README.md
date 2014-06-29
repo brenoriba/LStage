@@ -1,4 +1,4 @@
-# Lstage - Stage concurrency kit for lua
+# Lstage - Stage concurrency kit for Lua
 Lstage is a Lua library for bulding parallel, non-linear pipelines based on the concepts of the SEDA (Staged Event-Driven Architecture).
 
 # Compiling and Installing
