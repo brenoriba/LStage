@@ -44,7 +44,7 @@ sudo apt-get install aptitude lua-filesystem-dev
 sudo aptitude install libopencv-dev libopencv-highgui-dev libimlib2-dev
 ```
 
-Compile:
+Build project:
 
 ```
 make
