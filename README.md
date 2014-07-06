@@ -11,7 +11,7 @@ For more information on the TBB library: http://threadingbuildingblocks.org/
 To install all dependencies on a Debian like linux (Ubuntu, mint, etc) do: 
 
 ```
-sudo apt-get install libtbb-dev libevent-dev lua5.1-dev lua5.1 g++
+sudo apt-get install libtbb-dev libevent-dev libpthread-stubs0-dev lua5.1-dev lua5.1 g++
 ```
 
 To clone git repository:

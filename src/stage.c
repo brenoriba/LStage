@@ -6,12 +6,14 @@
 
 #include <stdlib.h>
 #include <string.h>
+#include <pthread.h>
 
 #define DEFAULT_I_IDLE_CAPACITY 10
 #define DEFAULT_QUEUE_CAPACITY -1
 
 static void get_metatable(lua_State * L);
 extern pool_t lstage_defaultpool;
+static pthread_mutex_t lock;
 
 stage_t lstage_tostage(lua_State *L, int i) {
 	stage_t * s = luaL_checkudata (L, i, LSTAGE_STAGE_METATABLE);
@@ -196,7 +198,9 @@ static int stage_destroyinstances(lua_State * L) {
 	int i;
 	instance_t in;
 	if(n<=0) luaL_error(L,"Argument must be grater than zero");
-	/* TODO warning thread_unsafe, mutex needed (use it serially for now) */
+
+	// Lock process
+	pthread_mutex_lock(&lock);
 	if(lstage_lfqueue_getcapacity(s->instances)<0) {
 		int cur=0;
 			while(!lstage_lfqueue_try_pop(s->instances,&in)) {
@@ -215,7 +219,7 @@ static int stage_destroyinstances(lua_State * L) {
 	if(lstage_lfqueue_getcapacity(s->instances)>0) 
 		lstage_lfqueue_setcapacity(s->instances,lstage_lfqueue_getcapacity(s->instances)-i);
 
-	/*unlock mutex */
+	pthread_mutex_unlock(&lock);
 	lua_pushnumber(L,i);
 	return 1;
 }
@@ -229,10 +233,13 @@ static int stage_instantiate(lua_State * L) {
 	int i;
 	if(n<=0) luaL_error(L,"Argument must be grater than zero");
 
-	/*TODO warning thread_unsafe, mutex needed (or use it in only one thread)*/
-	if(lstage_lfqueue_getcapacity(s->instances)>=0) 
+	// Lock until create a new instance (use pthread)
+	pthread_mutex_lock(&lock);
+	if(lstage_lfqueue_getcapacity(s->instances)>=0) {
 		lstage_lfqueue_setcapacity(s->instances,lstage_lfqueue_getcapacity(s->instances)+n);
-	
+        }
+	pthread_mutex_unlock(&lock);
+
 	// Creating new instances
 	for(i=0;i<n;i++) {
 		(void)lstage_newinstance(s);

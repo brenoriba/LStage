@@ -14,7 +14,7 @@ local stage 	  = require 'stage' 	  -- Project stages
 
 -- Available controllers
 -- {SRPT,MG1,SEDA,DYNAMIC,COLOR}
-local policy = "COLOR"
+local policy = "SRPT"
 
 -- Input directory 
 -- Change this if you want to get images from another folder
