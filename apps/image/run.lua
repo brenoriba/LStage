@@ -14,7 +14,8 @@ local stage 	  = require 'stage' 	  -- Project stages
 
 -- Available controllers
 -- {SRPT,MG1,SEDA,DYNAMIC,COLOR}
-local policy = "SRPT"
+local policy 	      = "COLOR"
+local instanceControl = true
 
 -- Input directory 
 -- Change this if you want to get images from another folder
@@ -42,7 +43,23 @@ for i=1,n do
 end
 
 -- Configure policy
-controllers.configure(stages,policy,threads)
+controllers.configure(stages,policy,threads,instanceControl)
+
+-- Timer event
+on_timer=function(id)
+	-- Controllers configuration
+	-- MG1
+	if (policy == "MG1") then
+		local mg1 = require 'lstage.controllers.mg1'
+		mg1.on_timer(id)
+	end
+	
+	-- Dynamic
+	if (policy == "DYNAMIC") then
+		local dynamic = require 'lstage.controllers.dynamic'
+		dynamic.on_timer(id)
+	end
+end
 
 -- Dispatch on_timer events
 lstage.dispatchevents()

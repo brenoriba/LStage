@@ -40,8 +40,9 @@ local sort   = require 'lstage.utils.mergesort'
 	</summary>
 	<param name="stagesTable">LEDA stages table</param>
 	<param name="numberOfThreads">Number of threads to be created</param>
+	<param name="instanceControl">Create more instances to prior stages</param>
 ]]--
-function srpt.configure(stagesTable, numberOfThreads)
+function srpt.configure(stagesTable, numberOfThreads, instanceControl)
 	-- Creating threads
 	for index=1,numberOfThreads do
 		lstage.pool:add()
@@ -64,6 +65,11 @@ function srpt.configure(stagesTable, numberOfThreads)
 		-- We can have many stages with the same priority
 		for stage=1,#stages do
 			stages[stage]:setpriority(priority)	
+
+			-- Create more instances to pior stages
+			if (instanceControl) then
+				stages[stage]:instantiate(priority)
+			end
 		end
 		priority = priority - 1
 	end

@@ -60,7 +60,7 @@ end
 	</summary>
 	<param name="id">Timer ID</param>
 ]]--
-on_timer=function(id)
+function dynamic.on_timer(id)
 	-- Validate ID number
 	if (id ~= 100) then
 		return

@@ -17,7 +17,7 @@ local refresh = 5
 local wrapper = {}
 
 -- SRPT configure method
-wrapper.srpt = function (stagesTable, threads)
+wrapper.srpt = function (stagesTable, threads, instanceControl)
 	-- Create SRPT table
 	local stages = {}
 	for ix=1,#stagesTable do
@@ -28,13 +28,13 @@ wrapper.srpt = function (stagesTable, threads)
 	end
 
 	-- stagesTable, numberOfThreads
-	srpt.configure(stages, threads)
+	srpt.configure(stages, threads, instanceControl)
 end
 
 -- MG1 configure method
-wrapper.mg1 = function (stagesTable, threads)
+wrapper.mg1 = function (stagesTable, threads, instanceControl)
 	-- stagesTable, numberOfThreads, refreshSeconds
-	mg1.configure(stagesTable, threads, refresh)
+	mg1.configure(stagesTable, threads, refresh, instanceControl)
 end
 
 -- SEDA configure method
@@ -60,15 +60,15 @@ wrapper.dynamic = function (stagesTable, threads)
 end
 
 -- Configure policy
-wrapper.configure = function (stages, policy, threads)
+wrapper.configure = function (stages, policy, threads,instanceControl)
 	print("\n*********************************")
 
 	if (policy == "SRPT") then
 		print("Creating "..threads.." thread(s)")
-		wrapper.srpt (stages, threads)
+		wrapper.srpt (stages, threads, instanceControl)
 	elseif (policy == "MG1") then
 		print("Creating "..threads.." thread(s)")
-		wrapper.mg1 (stages, threads)
+		wrapper.mg1 (stages, threads, instanceControl)
 	elseif (policy == "SEDA") then
 		threads = threads / #stages
 		print("Creating "..threads.." thread(s) per stage")

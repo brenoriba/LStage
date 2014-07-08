@@ -64,7 +64,7 @@ if (policy == "SRPT") then
 	stages[2].stages[1] = stage1
 
 	-- Configuring priority between stages
-	srpt.configure(stages, cores)
+	srpt.configure(stages, cores, false)
 end
 
 -- =============================================
@@ -76,7 +76,7 @@ if (policy == "MG1") then
 	stages[2] = stage2
 
 	-- Configuring priority between stages
-	mg1.configure(stages, cores, 1)
+	mg1.configure(stages, cores, 1, true)
 end
 
 -- =============================================
@@ -88,7 +88,7 @@ if (policy == "SEDA") then
 	stages[2] = stage2
 
 	-- Configuring priority between stages
-	seda.configure(stages, cores)
+	seda.configure(stages, cores, false)
 end
 
 -- =============================================
@@ -109,7 +109,17 @@ if (policy == "DYNAMIC") then
 	stages[2].stage		 = stage2
 
 	-- Configuring priority between stages
-	dynamic.configure(stages, 2)
+	dynamic.configure(stages, 2, false)
+end
+
+on_timer=function(id)
+	if (policy == "MG1") then
+		mg1.on_timer(id)
+	end
+	
+	if (policy == "DYNAMIC") then
+		dynamic.on_timer(id)
+	end
 end
 
 -- Dispatch on_timer events

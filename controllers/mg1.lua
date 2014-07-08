@@ -21,10 +21,11 @@
 	**********************************************************************************************
 ]]--
 
-local mg1    = {}
-local lstage = require 'lstage'
-local sort   = require 'lstage.utils.mergesort'
-local stages = {}
+local mg1          = {}
+local lstage       = require 'lstage'
+local sort         = require 'lstage.utils.mergesort'
+local stages       = {}
+local newInstances = false
 
 --[[
 	<summary>
@@ -33,8 +34,9 @@ local stages = {}
 	<param name="stagesTable">LEDA stages table</param>
 	<param name="numberOfThreads">Number of threads to be created</param>
 	<param name="refreshSeconds">Time (in seconds) to refresh stage's rate</param>
+	<param name="instanceControl">Create more instances to prior stages</param>
 ]]--
-function mg1.configure(stagesTable, numberOfThreads, refreshSeconds)
+function mg1.configure(stagesTable, numberOfThreads, refreshSeconds, instanceControl)
 	-- Creating threads
 	for index=1,numberOfThreads do
 		lstage.pool:add()
@@ -48,7 +50,8 @@ function mg1.configure(stagesTable, numberOfThreads, refreshSeconds)
 
 	-- We keep table in a global because we will
 	-- use to get stage's rate at "on_timer" callback
-	stages = stagesTable
+	stages       = stagesTable
+	newInstances = instanceControl
 
 	-- Every "refreshSeconds" with ID = 100
 	lstage.add_timer(refreshSeconds, 100)
@@ -60,7 +63,7 @@ end
 	</summary>
 	<param name="id">Timer ID</param>
 ]]--
-on_timer=function(id)
+function mg1.on_timer(id)
 	-- Validate ID number
 	if (id ~= 100) then
 		return
@@ -80,18 +83,24 @@ on_timer=function(id)
 	-- Sort by "rate" value
 	sort.MergeSort(pollingTable, 1, #pollingTable, "rate")
 	
-	local lastRate = -1
-	local priority = #pollingTable
+	local lastRate     = -1
+	local instanceSize = -1
+	local priority     = #pollingTable
 
 	-- Give priority in ascending order
 	for index=1,#pollingTable do
 		-- Same "rate", same priority
 		if (index ~= #pollingTable and lastRate ~= pollingTable[index].rate) then
-			priority = priority - 1			
+			priority = priority - 1	
 		end
 
 		pollingTable[index].stage:setpriority(priority)
 		lastRate = pollingTable[index].rate
+
+		-- Control new instances
+		if (newInstances) then
+			--instanceSize = pollingTable[index].stage.instancesize
+		end
 	end
 end
 

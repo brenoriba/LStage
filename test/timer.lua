@@ -1,24 +1,20 @@
-local lstage=require'lstage'
+local lstage = require 'lstage'
 
-
-local function add_timer(time,f)
-	return lstage.stage(function()
-	 	while true do
-			lstage.event.sleep(time)
-			f()		
-		end
-	end):push()
+function add_timer()
+	lstage.add_timer(1, 100)
 end
 
-function handler(id) return function()
-		thn=thn or lstage.now()
-		print(require'string'.format("id %d slept for %.6f",id,lstage.now()-thn))
-		thn=lstage.now()
+on_timer=function(id)
+	-- Validate ID number
+	if (id ~= 100) then
+		return
 	end
+
+	print(id)
 end
 
-add_timer(0.1,handler(1))
-add_timer(0.4,handler(2))
-add_timer(0.8,handler(3))
+-- Initialize
+add_timer()
 
-lstage.channel():get() --dorme para sempre
+-- Dispatch on_timer events
+lstage.dispatchevents()
