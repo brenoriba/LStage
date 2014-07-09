@@ -17,7 +17,7 @@ local debug 	= false
 
 -- How many instances each stage will have
 -- (we use the same as the number of threads)
-local instances = 4
+local instances = 1
 
 -- Timer
 local start = lstage.now()

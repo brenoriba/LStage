@@ -5,7 +5,7 @@ local dynamic = require 'lstage.controllers.dynamic'
 local seda    = require 'lstage.controllers.seda'
 
 -- Creating stages table
-local policy = "MG1"
+local policy = "DYNAMIC"
 local stages = {}
 local cores  = lstage.cpus()
 local start  = lstage.now()
@@ -18,7 +18,7 @@ local stage3=lstage.stage(
 			local b = a
 		end	
 		print("[Tempo] "..lstage.now() - start)
-	end,8)
+	end,2)
 
 local stage2=lstage.stage(
 	function()
@@ -28,7 +28,7 @@ local stage2=lstage.stage(
 			local b = a
 		end	
 		stage3:push()
-	end,8)
+	end,2)
 
 local stage1=lstage.stage(
 	function() 
@@ -38,7 +38,7 @@ local stage1=lstage.stage(
 			local b = a
 		end	
 		stage2:push()
-	end,8)
+	end,2)
 
 
 for i=1,100 do
@@ -64,7 +64,7 @@ if (policy == "SRPT") then
 	stages[2].stages[1] = stage1
 
 	-- Configuring priority between stages
-	srpt.configure(stages, cores, false)
+	srpt.configure(stages, cores, true)
 end
 
 -- =============================================
@@ -88,7 +88,7 @@ if (policy == "SEDA") then
 	stages[2] = stage2
 
 	-- Configuring priority between stages
-	seda.configure(stages, cores, false)
+	seda.configure(stages, cores)
 end
 
 -- =============================================
@@ -109,7 +109,7 @@ if (policy == "DYNAMIC") then
 	stages[2].stage		 = stage2
 
 	-- Configuring priority between stages
-	dynamic.configure(stages, 2, false)
+	dynamic.configure(stages, 2)
 end
 
 on_timer=function(id)

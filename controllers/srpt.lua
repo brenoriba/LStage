@@ -66,7 +66,7 @@ function srpt.configure(stagesTable, numberOfThreads, instanceControl)
 		for stage=1,#stages do
 			stages[stage]:setpriority(priority)	
 
-			-- Create more instances to pior stages
+			-- Create more instances to prior stages
 			if (instanceControl) then
 				stages[stage]:instantiate(priority)
 			end

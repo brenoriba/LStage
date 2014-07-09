@@ -185,13 +185,6 @@ static int stage_queue_size (lua_State *L) {
 	return 1;
 }
 
-// Number of instances configured to the specific stage
-static int stage_instances_size (lua_State *L) {
-	stage_t s = lstage_tostage(L, 1);
-	lua_pushnumber(L,lstage_lfqueue_size(s->instances));
-	return 1;
-}
-
 static int stage_destroyinstances(lua_State * L) {
 	stage_t s = lstage_tostage(L, 1);
 	int n=lua_tointeger(L,2);
@@ -332,7 +325,6 @@ static const struct luaL_Reg StageMetaFunctions[] = {
 		{"wrap",stage_wrap},
 		{"push",stage_push},
 		{"size",stage_queue_size},
-		{"instancesize", stage_instances_size},
 		{"instantiate",stage_instantiate},
 		{"free",stage_destroyinstances},
 		{"ptr",stage_ptr},

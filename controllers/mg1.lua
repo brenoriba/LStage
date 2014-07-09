@@ -77,7 +77,7 @@ function mg1.on_timer(id)
 
 		pollingTable[size]       = {}
 		pollingTable[size].stage = stages[index]
-		pollingTable[size].rate  = stages[index]:size() - stages[index]:instancesize()
+		pollingTable[size].rate  = stages[index]:size() - stages[index]:instances()
 	end
 
 	-- Sort by "rate" value
@@ -99,7 +99,18 @@ function mg1.on_timer(id)
 
 		-- Control new instances
 		if (newInstances) then
-			--instanceSize = pollingTable[index].stage.instancesize
+			local stage 	   = pollingTable[index].stage			
+			local instanceSize = stage:instances()
+			local newInstances = priority - instanceSize
+
+			-- Check how many instances we have to create
+			if (newInstances > 0) then
+				stage:instantiate(newInstances)	
+			-- Check how many instances we have to remove
+			elseif (newInstances < 0) then
+				newInstances = newInstances * -1
+				stage:free(newInstances)
+			end
 		end
 	end
 end

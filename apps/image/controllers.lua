@@ -56,7 +56,7 @@ wrapper.dynamic = function (stagesTable, threads)
 	end
 
 	-- stagesTable, refreshSeconds
-	dynamic.configure(stages, refresh)
+	dynamic.configure(stages, refresh, instanceControl)
 end
 
 -- Configure policy
@@ -70,11 +70,11 @@ wrapper.configure = function (stages, policy, threads,instanceControl)
 		print("Creating "..threads.." thread(s)")
 		wrapper.mg1 (stages, threads, instanceControl)
 	elseif (policy == "SEDA") then
-		threads = threads / #stages
+		threads = math.ceil(threads / #stages)
 		print("Creating "..threads.." thread(s) per stage")
 		wrapper.seda (stages, threads)
 	elseif (policy == "DYNAMIC") then
-		threads = threads / #stages
+		threads = math.ceil(threads / #stages)
 		print("Creating "..threads.." thread(s) per stage")
 		wrapper.dynamic (stages, threads)
 	elseif (policy == "COLOR") then
