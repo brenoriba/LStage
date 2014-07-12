@@ -20,10 +20,7 @@
 	**************************************** PUC-RIO 2014 ****************************************
 
 	Implemented by: 
-		- Ana Lúcia de Moura
 		- Breno Riba
-		- Noemi Rodriguez   
-		- Tiago Salmito
 		
 	Implemented on March 2014
 	   
@@ -44,9 +41,7 @@ local sort   = require 'lstage.utils.mergesort'
 ]]--
 function srpt.configure(stagesTable, numberOfThreads, instanceControl)
 	-- Creating threads
-	for index=1,numberOfThreads do
-		lstage.pool:add()
-	end
+	lstage.pool:add(numberOfThreads)
 
 	-- Graph with one stage
 	-- Nothing to do in this case

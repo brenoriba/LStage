@@ -6,10 +6,7 @@
 	**************************************** PUC-RIO 2014 ****************************************
 
 	Implemented by: 
-		- Ana Lúcia de Moura
 		- Breno Riba
-		- Noemi Rodriguez   
-		- Tiago Salmito
 		
 	Implemented on May 2014
 	   

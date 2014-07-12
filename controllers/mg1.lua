@@ -11,10 +11,7 @@
 	**************************************** PUC-RIO 2014 ****************************************
 
 	Implemented by: 
-		- Ana Lúcia de Moura
 		- Breno Riba
-		- Noemi Rodriguez   
-		- Tiago Salmito
 		
 	Implemented on March 2014
 	   
@@ -38,9 +35,7 @@ local newInstances = false
 ]]--
 function mg1.configure(stagesTable, numberOfThreads, refreshSeconds, instanceControl)
 	-- Creating threads
-	for index=1,numberOfThreads do
-		lstage.pool:add()
-	end
+	lstage.pool:add(numberOfThreads)
 
 	-- Graph with one stage
 	-- Nothing to do in this case

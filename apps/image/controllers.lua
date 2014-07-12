@@ -13,8 +13,16 @@ local srpt    = require 'lstage.controllers.srpt'
 local mg1     = require 'lstage.controllers.mg1'
 local dynamic = require 'lstage.controllers.dynamic'
 local seda    = require 'lstage.controllers.seda'
-local refresh = 5
+
+-- Global vars
 local wrapper = {}
+local refresh = 5
+
+-- Used on Dynamic controller
+local maxThreads       = 4
+local queueThreshold   = 5
+local idlePercentage   = 50
+local activePercentage = 10
 
 -- SRPT configure method
 wrapper.srpt = function (stagesTable, threads, instanceControl)
@@ -44,47 +52,49 @@ wrapper.seda = function (stagesTable, threads)
 end
 
 -- DYNAMIC configure method
-wrapper.dynamic = function (stagesTable, threads)
-	-- Creating stages table
-	local stages = {}
-	for ix=1,#stages do
-		stages[1] 		 = {}
-		stages[1].minThreads 	 = threads
-		stages[1].maxThreads 	 = threads + math.ceil(threads * 0.1)
-		stages[1].queueThreshold = 5
-		stages[1].stage		 = stagesTable[ix]
-	end
+wrapper.dynamic = function (stagesTable, minThreads, maxThreads, queueThreshold, idlePercentage)
+	local conf = {}
+	
+	-- Configuration
+	conf.stages  	      = stagesTable
+	conf.minThreads       = minThreads
+	conf.maxThreads       = maxThreads
+	conf.queueThreshold   = queueThreshold 
+	conf.idlePercentage   = idlePercentage
+	conf.activePercentage = activePercentage
+	conf.refreshSeconds   = refresh
 
 	-- stagesTable, refreshSeconds
-	dynamic.configure(stages, refresh, instanceControl)
+	dynamic.configure(conf)
 end
 
 -- Configure policy
-wrapper.configure = function (stages, policy, threads,instanceControl)
+wrapper.configure = function (stages, policy, threads, instanceControl)
 	print("\n*********************************")
 
 	if (policy == "SRPT") then
 		print("Creating "..threads.." thread(s)")
 		wrapper.srpt (stages, threads, instanceControl)
+
 	elseif (policy == "MG1") then
 		print("Creating "..threads.." thread(s)")
 		wrapper.mg1 (stages, threads, instanceControl)
+
 	elseif (policy == "SEDA") then
 		threads = math.ceil(threads / #stages)
 		print("Creating "..threads.." thread(s) per stage")
 		wrapper.seda (stages, threads)
+
 	elseif (policy == "DYNAMIC") then
-		threads = math.ceil(threads / #stages)
-		print("Creating "..threads.." thread(s) per stage")
-		wrapper.dynamic (stages, threads)
+		print("Creating "..threads.." thread(s)")
+		wrapper.dynamic (stages, threads, maxThreads, queueThreshold, idlePercentage)
+
 	elseif (policy == "COLOR") then
 		-- Do nothing - color policy is the lstage default policy
 		print("Creating "..threads.." thread(s)")
 	
 		-- Creating threads
-		for index=1,threads do
-			lstage.pool:add()
-		end
+		lstage.pool:add(threads)
 	end
 
 	print("Configuring ["..policy.."] policy")

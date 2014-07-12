@@ -96,20 +96,28 @@ end
 -- =============================================
 if (policy == "DYNAMIC") then
 	-- Creating stages table
-	stages[1] 		 = {}
-	stages[1].minThreads 	 = 1
-	stages[1].maxThreads 	 = 2
-	stages[1].queueThreshold = 2	
-	stages[1].stage		 = stage1
+	stages[1] = stage1
+	stages[2] = stage2
+	stages[3] = stage3
 
-	stages[2] 		 = {}
-	stages[2].minThreads 	 = 1
-	stages[2].maxThreads 	 = 2
-	stages[2].queueThreshold = 2	
-	stages[2].stage		 = stage2
+	local conf 	       = {}
+	local minThreads       = 2
+	local queueThreshold   = 50
+	local activePercentage = 10	
+	local refresh 	       = 5
+	local idlePercentage   = 70
+	
+	-- Configuration
+	conf.stages  	      = stages
+	conf.maxThreads       = minThreads + 2
+	conf.minThreads       = minThreads
+	conf.queueThreshold   = queueThreshold 
+	conf.refreshSeconds   = refresh
+	conf.idlePercentage   = idlePercentage
+	conf.activePercentage = activePercentage
 
 	-- Configuring priority between stages
-	dynamic.configure(stages, 2)
+	dynamic.configure(conf)
 end
 
 on_timer=function(id)

@@ -14,11 +14,8 @@
 	**************************************** PUC-RIO 2014 ****************************************
 
 	Implemented by: 
-		- Ana Lúcia de Moura
 		- Breno Riba
-		- Noemi Rodriguez   
-		- Tiago Salmito
-		
+				
 	Implemented on May 2014
 	   
 	**********************************************************************************************
@@ -27,31 +24,23 @@
 local lstage  = require 'lstage'
 local pool    = require 'lstage.pool'
 local dynamic = {}
-local stages  = {}
+local conf    = {}
 
 --[[
 	<summary>
 		Dynamic Resource Controller configure method
 	</summary>
-	<param name="stagesTable">LEDA stages table</param>
-	<param name="refreshSeconds">Time (in seconds) to refresh stage's rate</param>
+	<param name="configuration">Configuration table</param>
 ]]--
-function dynamic.configure (stagesTable, refreshSeconds)
-	stages = stagesTable
-
-	-- Creating a pool per stage
-	for index=1,#stages do
-		-- New pool
-		local currentPool=pool.new(0)
-		currentPool:add(stages[index].minThreads)
-
-		-- Set this pool to stage
-		stages[index].stage:setpool(currentPool)
-		stages[index].pool = currentPool
-	end
+function dynamic.configure (configuration)
+	-- Store in global vars
+	conf = configuration
+	
+	-- Creating threads
+	lstage.pool:add(conf.minThreads)
 
 	-- Every "refreshSeconds" with ID = 100
-	lstage.add_timer(refreshSeconds, 100)
+	lstage.add_timer(conf.refreshSeconds, 100)
 end
 
 --[[
@@ -66,30 +55,42 @@ function dynamic.on_timer(id)
 		return
 	end
 
-	-- Initialize vars
-	local current 	  = nil
-	local stage 	  = nil
-	local queueSize   = nil
-	local currentPool = nil
-	local poolSize    = nil
-
 	-- Check stage's queue
-	for index=1,#stages do
-		current     = stages[index]
-		stage 	    = current.stage
-		queueSize   = stage:size()
-		currentPool = current.pool
-		poolSize    = currentPool:size()
+	local stages 		  = conf.stages
+	local queueSize 	  = 0
+	local totalIdle 	  = 0
+	local totalAboveThreshold = 0
 
-		-- Check queue threshold and compare current pool size with
-		-- max number of threads per stage
-		if (queueSize >= current.queueThreshold and poolSize < current.maxThreads) then
-			-- We have to add one more thread	
-			currentPool:add(1)
-		-- Stage is IDLE - so we have to kill a thread
-		elseif (queueSize == 0 and poolSize > current.minThreads) then
-			--currentPool:kill()
+	-- Loop over stages
+	for index=1,#stages do
+		queueSize = stages[index]:size()
+	
+		-- Check how many stages are idle
+		if (queueSize == 0) then
+			totalIdle = totalIdle + 1
 		end
+		
+		-- Active and above threshold
+		if (queueSize > conf.queueThreshold) then
+			totalAboveThreshold = totalAboveThreshold + 1
+		end
+	end
+
+	-- Check how many stages are IDLE
+	-- If we have more than a configured percentage, we kill a thread
+	local idlePercentage   = (totalIdle * 100) / #stages
+	local activePercentage = (totalAboveThreshold * 100) / #stages
+	local poolSize 	       = lstage.pool:size()
+
+	-- Active - add one thread into pool
+	if (activePercentage > conf.activePercentage and poolSize < conf.maxThreads) then
+		print("[ACTIVE PERCENTAGE: "..math.floor(activePercentage).."%] Creating one more thread...")
+		lstage.pool:add(1)
+
+	-- Idle - kill one thread
+	elseif (idlePercentage > conf.idlePercentage and poolSize > conf.minThreads) then
+		--print("[IDLE PERCENTAGE: "..math.floor(idlePercentage).."%] Killing one thread...")
+		--lstage.pool:kill()
 	end
 end
 
