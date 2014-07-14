@@ -52,7 +52,7 @@ wrapper.seda = function (stagesTable, threads)
 end
 
 -- DYNAMIC configure method
-wrapper.dynamic = function (stagesTable, minThreads, maxThreads, queueThreshold, idlePercentage)
+wrapper.dynamic = function (stagesTable, minThreads, maxThreads, queueThreshold, instances, idlePercentage)
 	local conf = {}
 	
 	-- Configuration
@@ -63,13 +63,14 @@ wrapper.dynamic = function (stagesTable, minThreads, maxThreads, queueThreshold,
 	conf.idlePercentage   = idlePercentage
 	conf.activePercentage = activePercentage
 	conf.refreshSeconds   = refresh
+	conf.instances 	      = instances
 
 	-- stagesTable, refreshSeconds
 	dynamic.configure(conf)
 end
 
 -- Configure policy
-wrapper.configure = function (stages, policy, threads, instanceControl)
+wrapper.configure = function (stages, policy, threads, instances, instanceControl)
 	print("\n*********************************")
 
 	if (policy == "SRPT") then
@@ -77,8 +78,16 @@ wrapper.configure = function (stages, policy, threads, instanceControl)
 		wrapper.srpt (stages, threads, instanceControl)
 
 	elseif (policy == "MG1") then
+		-- Prepare MG1 table
+		local mg1Stages = {}
+		for ix=1,#stages do
+			mg1Stages[#mg1Stages+1]         = {}
+			mg1Stages[#mg1Stages].stage     = stages[ix]
+			mg1Stages[#mg1Stages].instances = instances
+		end
+
 		print("Creating "..threads.." thread(s)")
-		wrapper.mg1 (stages, threads, instanceControl)
+		wrapper.mg1 (mg1Stages, threads, instances, instanceControl)
 
 	elseif (policy == "SEDA") then
 		threads = math.ceil(threads / #stages)
@@ -87,7 +96,7 @@ wrapper.configure = function (stages, policy, threads, instanceControl)
 
 	elseif (policy == "DYNAMIC") then
 		print("Creating "..threads.." thread(s)")
-		wrapper.dynamic (stages, threads, maxThreads, queueThreshold, idlePercentage)
+		wrapper.dynamic (stages, threads, maxThreads, queueThreshold, instances, idlePercentage)
 
 	elseif (policy == "COLOR") then
 		-- Do nothing - color policy is the lstage default policy

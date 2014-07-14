@@ -63,7 +63,7 @@ function dynamic.on_timer(id)
 
 	-- Loop over stages
 	for index=1,#stages do
-		queueSize = stages[index]:size()
+		queueSize = stages[index]:size() + stages[index]:instances() - conf.instances
 	
 		-- Check how many stages are idle
 		if (queueSize == 0) then

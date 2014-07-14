@@ -22,7 +22,8 @@ local instanceControl = false
 local inputDir  = "in/in_big/"
 
 -- Number of threads (per stage in case of SEDA and DYNAMIC)
-local threads = 2
+local threads   = 2
+local instances = 2
 
 -- Stages table
 local stages = {}
@@ -43,10 +44,27 @@ for i=1,n do
 end
 
 -- Configure policy
-controllers.configure(stages,policy,threads,instanceControl)
+controllers.configure(stages,policy,threads,instances,instanceControl)
+
+-- Every "refreshSeconds" with ID = 100
+lstage.add_timer(1, 1)
 
 -- Timer event
 on_timer=function(id)
+	local queue = 0
+
+	--[[
+	print("")	
+	print("***************************************")
+	print("Stages queue status")
+	for ix=1,#stages do
+		queue = stages[ix]:size() + instances - stages[ix]:instances()
+		print("["..ix.."][PRIORITY] "..stages[ix]:getpriority().." [QUEUE] "..queue)
+	end	
+	print("***************************************")
+	print("")
+	--]]
+
 	-- Controllers configuration
 	-- MG1
 	if (policy == "MG1") then
