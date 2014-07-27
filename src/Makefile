@@ -25,7 +25,7 @@ OBJ=  lstage.o \
 		threading.o \
 		scheduler.o \
 		pool.o \
-		channel.o
+		channel.o \
       
 HEADERS=*.h
 

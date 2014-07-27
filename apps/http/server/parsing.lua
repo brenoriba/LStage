@@ -7,33 +7,34 @@
 	**********************************************************************************************
 ]]--
 
-local utils = {}
+local parsing = {}
 
 -- Split string
-utils.strsplit = function(str)
+parsing.strsplit = function(str)
 	local words = {}
-	
+
 	for w in string.gmatch (str, "%S+") do
-		table.insert (words, w)
-print(w)
+		words[#words+1] = w
 	end
 	
 	return words
 end
 
 -- Read request headers
-utils.read_headers = function(sock,req)
+parsing.read_headers = function(sock,req)
 	local headers = {}
 	local prevval, prevname
-	
+
 	while 1 do
 		local l,err = sock:receive()
 		if (not l or l == "") then
 			req.headers = headers
 			return
 		end
+
 		local _,_, name, value = string.find (l, "^([^: ]+)%s*:%s*(.+)")
 		name = string.lower (name or '')
+
 		if name then
 			prevval = headers [name]
 			if prevval then
@@ -47,4 +48,15 @@ utils.read_headers = function(sock,req)
 	end
 end
 
-return utils
+-- Parse URL
+parsing.parse_url = function(req)
+	local url     = require "socket.url"
+	local def_url = string.format ("http://%s%s", req.headers.host or "", req.cmd_url or "")
+
+	req.parsed_url	    = url.parse (def_url or '')
+	req.parsed_url.port = req.parsed_url.port or req.port
+	req.built_url 	    = url.build (req.parsed_url)
+	req.relpath 	    = url.unescape (req.parsed_url.path)
+end
+
+return parsing

@@ -36,34 +36,54 @@ static void io_ready(evutil_socket_t fd, short event, void *arg) {
 	lstage_pushinstance(i);
 }
 
+// Wait for IO - async
 static int event_wait_io(lua_State * L) {
    int fd=-1;
    fd=lua_tointeger(L,1);
+
    int mode=-1;
    mode=lua_tointeger(L,2);
+
    int m=0;
-   if(mode==0) 
-      m = EV_READ; // read
-   else if(mode==1)
-         m = EV_WRITE; //write
-   else luaL_error(L,"Invalid io operation type (0=read and 1=write)");
+   // Read
+   if(mode==0) {
+      m = EV_READ; 
+   }
+   // Write
+   else if (mode==1) {
+      m = EV_WRITE; 
+   }
+   else {
+      luaL_error(L,"Invalid io operation type (0=read and 1=write)");
+   }
+
    double time=0.0l;  
    if(lua_type(L,3)==LUA_TNUMBER) {
       time=lua_tonumber(L,3);
-      if(time<=0.0l) luaL_error(L,"Invalid timeout value");
+
+      if(time<=0.0l) {
+         luaL_error(L,"Invalid timeout value");
+      }
    }
-  	lua_pushliteral(L,LSTAGE_INSTANCE_KEY);
-	lua_gettable(L, LUA_REGISTRYINDEX);
-	if(lua_type(L,-1)!=LUA_TLIGHTUSERDATA) luaL_error(L,"Cannot wait outside of a stage");
-	instance_t i=lua_touserdata(L,-1);
-	lua_pop(L,1);
-	i->flags=I_WAITING_IO;
+  	
+   lua_pushliteral(L,LSTAGE_INSTANCE_KEY);
+   lua_gettable(L, LUA_REGISTRYINDEX);
+
+   if(lua_type(L,-1)!=LUA_TLIGHTUSERDATA) {
+      luaL_error(L,"Cannot wait outside of a stage");
+   }
+
+   instance_t i=lua_touserdata(L,-1);
+   lua_pop(L,1);
+   i->flags=I_WAITING_IO;
+
    if(time>0.0) {
       struct timeval to={time,(((double)time-((int)time))*1000000.0L)};
       event_base_once(loop, fd, m, io_ready, i, &to);
    } else {
       event_base_once(loop, fd, m, io_ready, i, NULL);
    }
+
    return lua_yield(L,0);
 }
 

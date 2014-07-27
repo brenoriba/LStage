@@ -160,7 +160,7 @@ stage.grayscale=lstage.stage(
 -- Load images from disk
 stage.load={}
 stage.load=lstage.stage(
-	function(inputDir, filename) 
+	function(inputDir, filename)
 		if (debug) then	
 			print("[in] "..inputDir.."/"..filename)
 		end

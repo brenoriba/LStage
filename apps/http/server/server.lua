@@ -12,7 +12,7 @@ local lstage = require 'lstage'
 local stages = require 'stages'
 
 -- Configurations
-local defaultPort = 8081
+local defaultPort = 8080
 
 -- Creating new threads
 lstage.pool:add()

@@ -12,20 +12,18 @@ To install all dependencies on a Debian like linux (Ubuntu, mint, etc) do:
 
 ```
 sudo apt-get update
-sudo apt-get install libtbb-dev libevent-dev libpthread-stubs0-dev lua5.1-dev lua5.1 g++
+sudo apt-get install libtbb-dev libevent-dev libpthread-stubs0-dev lua5.1-dev lua5.1 g++ make git
 ```
 
 To clone git repository:
 
 ```
-sudo apt-get install git
 git clone https://github.com/brenoriba/lstage.git
 ```
 
 To build Lstage:
 
 ```
-sudo apt-get install make
 make
 sudo make install
 ```

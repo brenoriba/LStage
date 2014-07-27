@@ -53,18 +53,6 @@ lstage.add_timer(1, 1)
 on_timer=function(id)
 	local queue = 0
 
-	--[[
-	print("")	
-	print("***************************************")
-	print("Stages queue status")
-	for ix=1,#stages do
-		queue = stages[ix]:size() + instances - stages[ix]:instances()
-		print("["..ix.."][PRIORITY] "..stages[ix]:getpriority().." [QUEUE] "..queue)
-	end	
-	print("***************************************")
-	print("")
-	--]]
-
 	-- Controllers configuration
 	-- MG1
 	if (policy == "MG1") then
