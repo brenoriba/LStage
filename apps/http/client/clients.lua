@@ -37,8 +37,13 @@ client=lstage.stage(
 			client:send("Accept-Encoding: gzip,deflate,sdch\n")
 			client:send("Accept-Language: pt-BR,pt;q=0.8,en-US;q=0.6,en;q=0.4,es;q=0.2\n")
 
+			print("Headers sent!")
 			local server_answer, err_ckt = client:receive("*l")
-			print(server_answer)
+			if err_ckt then
+				print(err_ckt)
+			else
+				print(server_answer)
+			end
 			client:close()
 		end
 	end, 1)
@@ -47,8 +52,7 @@ lstage.pool:add()
 
 -- Push message into client stage
 -- Reference: http://w3.impa.br/~diego/software/luasocket/url.html
---client:push("tcp http://www.example.com/cgilua/index.lua?a=2#there 2.0")
-client:push("tcp /index.lua 2.0")
+client:push("GET /index.html HTTP/1.0")
 
 -- Avoid script to close
 lstage.channel():get()

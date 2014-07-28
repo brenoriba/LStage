@@ -15,8 +15,7 @@ local stages = require 'stages'
 local defaultPort = 8080
 
 -- Creating new threads
-lstage.pool:add()
-lstage.pool:add()
+lstage.pool:add(2)
 
 -- Start server
 print("***********************")
