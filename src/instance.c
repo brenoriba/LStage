@@ -1,7 +1,6 @@
 #include "instance.h"
 #include "marshal.h"
 #include "scheduler.h"
-#include "extra/leda-io.h"
 
 #include <lua.h>
 #include <lauxlib.h>

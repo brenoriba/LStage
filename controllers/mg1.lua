@@ -72,7 +72,7 @@ function mg1.on_timer(id)
 
 		pollingTable[size]       = {}
 		pollingTable[size].stage = stages[index].stage
-		pollingTable[size].rate  = stages[index].stage:size() + stages[index].stage:instances() - stages[index].instances
+		pollingTable[size].rate  = stages[index].stage:size() + stages[index].instances - stages[index].stage:instances()
 	end
 
 	-- Sort by "rate" value

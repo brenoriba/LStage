@@ -16,7 +16,6 @@
 #include "stage.h"
 #include "pool.h"
 #include "threading.h"
-#include "extra/leda-io.h"
 
 struct event_base *lstage_event_base=NULL;
 
