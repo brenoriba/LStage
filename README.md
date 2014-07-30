@@ -58,3 +58,23 @@ Run:
 ```
 lua run.lua
 ```
+
+# Installing HTTP Server Project
+
+Build project:
+
+```
+make
+```
+
+Run:
+
+```
+lua server.lua
+```
+
+Run client:
+
+```
+lua clients.lua
+```
