@@ -16,7 +16,7 @@ local seda    = require 'lstage.controllers.seda'
 
 -- Global vars
 local wrapper = {}
-local refresh = 5
+local refresh = 2
 
 -- Used on Dynamic controller
 local maxThreads       = 4
@@ -52,7 +52,7 @@ wrapper.seda = function (stagesTable, threads)
 end
 
 -- DYNAMIC configure method
-wrapper.dynamic = function (stagesTable, minThreads, maxThreads, queueThreshold, instances, idlePercentage)
+wrapper.dynamic = function (stagesTable, minThreads, maxThreads, queueThreshold, idlePercentage)
 	local conf = {}
 	
 	-- Configuration
@@ -63,14 +63,12 @@ wrapper.dynamic = function (stagesTable, minThreads, maxThreads, queueThreshold,
 	conf.idlePercentage   = idlePercentage
 	conf.activePercentage = activePercentage
 	conf.refreshSeconds   = refresh
-	conf.instances 	      = instances
-
 	-- stagesTable, refreshSeconds
 	dynamic.configure(conf)
 end
 
 -- Configure policy
-wrapper.configure = function (stages, policy, threads, instances, instanceControl)
+wrapper.configure = function (stages, policy, threads, instanceControl)
 	print("\n*********************************")
 
 	if (policy == "SRPT") then
@@ -83,11 +81,10 @@ wrapper.configure = function (stages, policy, threads, instances, instanceContro
 		for ix=1,#stages do
 			mg1Stages[#mg1Stages+1]         = {}
 			mg1Stages[#mg1Stages].stage     = stages[ix]
-			mg1Stages[#mg1Stages].instances = instances
 		end
 
 		print("Creating "..threads.." thread(s)")
-		wrapper.mg1 (mg1Stages, threads, instances, instanceControl)
+		wrapper.mg1 (mg1Stages, threads, instanceControl)
 
 	elseif (policy == "SEDA") then
 		threads = math.ceil(threads / #stages)
@@ -96,7 +93,7 @@ wrapper.configure = function (stages, policy, threads, instances, instanceContro
 
 	elseif (policy == "DYNAMIC") then
 		print("Creating "..threads.." thread(s)")
-		wrapper.dynamic (stages, threads, maxThreads, queueThreshold, instances, idlePercentage)
+		wrapper.dynamic (stages, threads, maxThreads, queueThreshold, idlePercentage)
 
 	elseif (policy == "COLOR") then
 		-- Do nothing - color policy is the lstage default policy

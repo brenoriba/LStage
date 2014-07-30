@@ -149,10 +149,10 @@ static void thread_resume_instance(instance_t i) {
 				i->args=n;
 				
 				// Increment processed count - used to build statistics
-				i->stage->lock=0;
-				LOCK(i->stage);
-				i->stage->processed++;
-				UNLOCK(i->stage);
+				//i->stage->lock=0;
+				//LOCK(i->stage);
+				//i->stage->processed++;
+				//UNLOCK(i->stage);
 
 			} else {
 				lua_pushliteral(L,STAGE_HANDLER_KEY);
@@ -196,14 +196,15 @@ static THREAD_RETURN_T THREAD_CALLCONV thread_mainloop(void *t_val) {
    	self->state=THREAD_IDLE;
         lstage_pqueue_pop(self->pool->ready,&i);
 
+	// Instance found
+        if(i!=NULL) {
+	     	_DEBUG("Thread %p got a ready instance %p\n",self,i);
+	     	self->state=THREAD_RUNNING;
+      		thread_resume_instance(i);
 	// No instance
-        if(i==NULL) {
-    		break;
+	} else {
+		//break;
 	}
-
-     	_DEBUG("Thread %p got a ready instace %p\n",self,i);
-     	self->state=THREAD_RUNNING;
-      	thread_resume_instance(i);
    }
 
    self->state=THREAD_DESTROYED;

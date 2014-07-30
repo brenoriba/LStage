@@ -39,8 +39,8 @@ function dynamic.configure (configuration)
 	-- Creating threads
 	lstage.pool:add(conf.minThreads)
 
-	-- Every "refreshSeconds" with ID = 100
-	lstage.add_timer(conf.refreshSeconds, 100)
+	-- Every "refreshSeconds" with ID = 101
+	lstage.add_timer(conf.refreshSeconds, 101)
 end
 
 --[[
@@ -51,7 +51,7 @@ end
 ]]--
 function dynamic.on_timer(id)
 	-- Validate ID number
-	if (id ~= 100) then
+	if (id ~= 101) then
 		return
 	end
 
@@ -63,7 +63,7 @@ function dynamic.on_timer(id)
 
 	-- Loop over stages
 	for index=1,#stages do
-		queueSize = stages[index]:size() + conf.instances - stages[index]:instances()
+		queueSize = stages[index]:size() + stages[index]:instances() - stages[index]:instancesize()
 	
 		-- Check how many stages are idle
 		if (queueSize == 0) then

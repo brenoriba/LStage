@@ -14,7 +14,7 @@ local stage 	  = require 'stage' 	  -- Project stages
 
 -- Available controllers
 -- {SRPT,MG1,SEDA,DYNAMIC,COLOR}
-local policy 	      = "MG1"
+local policy 	      = "COLOR"
 local instanceControl = false
 
 -- Input directory 
@@ -22,8 +22,7 @@ local instanceControl = false
 local inputDir  = "in/in_big/"
 
 -- Number of threads (per stage in case of SEDA)
-local threads   = 1
-local instances = 2
+local threads = 2
 
 -- Stages table
 local stages = {}
@@ -44,10 +43,7 @@ for i=1,n do
 end
 
 -- Configure policy
-controllers.configure(stages,policy,threads,instances,instanceControl)
-
--- Every "refreshSeconds" with ID = 100
-lstage.add_timer(1, 1)
+controllers.configure(stages,policy,threads,instanceControl)
 
 -- Timer event
 on_timer=function(id)
@@ -59,7 +55,7 @@ on_timer=function(id)
 		local mg1 = require 'lstage.controllers.mg1'
 		mg1.on_timer(id)
 	end
-	
+
 	-- Dynamic
 	if (policy == "DYNAMIC") then
 		local dynamic = require 'lstage.controllers.dynamic'

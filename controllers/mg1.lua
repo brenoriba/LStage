@@ -33,7 +33,7 @@ local newInstances = false
 	<param name="refreshSeconds">Time (in seconds) to refresh stage's rate</param>
 	<param name="instanceControl">Create more instances to prior stages</param>
 ]]--
-function mg1.configure(stagesTable, numberOfThreads, refreshSeconds, instances, instanceControl)
+function mg1.configure(stagesTable, numberOfThreads, refreshSeconds, instanceControl)
 	-- Creating threads
 	lstage.pool:add(numberOfThreads)
 
@@ -72,7 +72,7 @@ function mg1.on_timer(id)
 
 		pollingTable[size]       = {}
 		pollingTable[size].stage = stages[index].stage
-		pollingTable[size].rate  = stages[index].stage:size() + stages[index].instances - stages[index].stage:instances()
+		pollingTable[size].rate  = stages[index].stage:size() + stages[index].stage:instances() - stages[index].stage:instancesize()
 	end
 
 	-- Sort by "rate" value
