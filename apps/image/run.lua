@@ -47,8 +47,6 @@ controllers.configure(stages,policy,threads,instanceControl)
 
 -- Timer event
 on_timer=function(id)
-	local queue = 0
-
 	-- Controllers configuration
 	-- MG1
 	if (policy == "MG1") then

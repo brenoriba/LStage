@@ -18,7 +18,7 @@ local stages    = {}
 local instances = 1
 
 -- Configuration for dynamic page
-local scriptDir = "~/Documents/lstage/apps/http/server"
+local scriptDir = "scripts/"
 
 -- Close client connection
 stages.closeSocket=lstage.stage(
@@ -28,22 +28,50 @@ stages.closeSocket=lstage.stage(
 
 -- Load cache file
 stages.cacheLoadFile=lstage.stage(
-	function(clientSocket, file)
-		-- Imports
+	function(clientSocket, fileName)
+		-- Imports		
+		require 'table'
 		require 'io'
 		cache=require 'cache'
 
-		local res    = { headers=response_headers() }
-		local script = scriptDir..file
+		local res    = { headers=util.response_headers() }
+		local script = scriptDir..fileName
 		local file   = io.open(script,"r")
 
 		-- File was found
 		if file then
+			local size = file:seek("end")			
+			file:close()
+
+			-- Prepare headers
+			res.headers["Content-Length"] = size
+		      	res.headers["Content-Type"]   = "text/html"
+		      	res.status_code               = 200
+
+			-- Send headers
+			clientSocket:send(util.stdresp(res))
+			
+			-- Read file and send buffer
+			local content = {}
+			local count   = 0
+			for line in io.lines(script) do 
+				content[#content + 1] = line
+			end
+
+			-- Send HTML to the client
+			local html = table.concat(content)
+			clientSocket:send(html)
+
+			-- Save into cache
+			cache.put(fileName,html)
+
+			-- Close client socket
+			stages.closeSocket:push(clientSocket)
 
 		-- File not found
 		else
 			-- HTML body message
-			local body      = "<html>Error: file '"..file.."' not found</html>"
+			local body      = "<html>Error: file '"..script.."' not found</html>"
 			res.status_code = 404
 
 			-- Prepare headers
@@ -62,8 +90,11 @@ stages.cacheLoadFile=lstage.stage(
 -- Access cache buffer
 stages.cacheBuffer=lstage.stage(
 	function(clientSocket, file)
+		require 'table'
+		cache=require 'cache'
+
 		local content   = cache.get(file)
-		local res       = {headers = response_headers()}
+		local res       = {headers = util.response_headers()}
 	 	res.status_code = 200
 
 		-- Add headers
@@ -71,8 +102,8 @@ stages.cacheBuffer=lstage.stage(
 	 	res.headers["Content-Type"]   = "text/html"
 	
 		-- Send result to the client
-		clientSocket:send(util.stdresp(res).."\n")
-		clientSocket:send(content.."\n")
+		clientSocket:send(util.stdresp(res))
+		clientSocket:send(content)
 
 		-- Close client connection	
 		stages.closeSocket:push(clientSocket)
@@ -90,7 +121,7 @@ stages.cacheHandler=lstage.stage(
 		else
 			stages.cacheLoadFile:push(clientSocket,reqData.relpath)
 		end
-	end,instances)
+	end,1)
 
 -- Run Lua script
 stages.runScript=lstage.stage(
@@ -115,22 +146,22 @@ stages.runScript=lstage.stage(
 			res.headers["Content-Type"]   = "text/html"
 
 			-- Send data
-			clientSocket:send(util.stdresp(res).."\n")
-			clientSocket:send(body.."\n")
+			clientSocket:send(util.stdresp(res))
+			clientSocket:send(body)
 		-- File found
 		else
 			-- Read script file
 			file:close()
 			local output    = dofile(script)
 		  	res.status_code = 200
-	
+
 			-- Prepare headers
 	  	 	res.headers["Content-Length"]=#output
 	 	  	res.headers["Content-Type"]="text/html"
 
 			-- Send data
-			clientSocket:send(util.stdresp(res).."\n")
-			clientSocket:send(output.."\n")
+			clientSocket:send(util.stdresp(res))
+			clientSocket:send(output)
 		end
 
 		-- Close client socket
@@ -140,7 +171,7 @@ stages.runScript=lstage.stage(
 -- Handle incoming connections
 stages.handle=lstage.stage(
 	function(clientSocket)
-		-- Receive client request		
+		-- Receive client request			
 		local data, err = clientSocket:receive()
 
 		-- Error check
@@ -164,7 +195,7 @@ stages.handle=lstage.stage(
 
 		-- Main page
 		if reqData.relpath == "/" then
-	      		reqData.relpath="/index.html"
+	      		reqData.relpath="scripts/index.html"
 	   	end
 
 		-- Show dynamic content (run script)
@@ -192,6 +223,6 @@ stages.start=lstage.stage(
 			-- Send request to handle stage
 			assert(stages.handle:push(clientSocket),"Error while handling connection")
 		end
-	end, instances)
+	end, 1)
 
 return stages

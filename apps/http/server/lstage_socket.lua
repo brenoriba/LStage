@@ -33,13 +33,13 @@ if tcp_client_mt then
 
    local old_send=tcp_client_mt.__index.send
    tcp_client_mt.__index.send=function(sock,...)
-      lstage.event.waitfd(sock:getfd(),lstage.event.WRITE)
+      --lstage.event.waitfd(sock:getfd(),lstage.event.WRITE)
       return old_send(sock,...)
    end
    
       local old_receive=tcp_client_mt.__index.receive
       tcp_client_mt.__index.receive=function(sock,...)
-	 lstage.event.waitfd(sock:getfd(),lstage.event.READ)
+	-- lstage.event.waitfd(sock:getfd(),lstage.event.READ)
          return old_receive(sock,...)
       end
    end

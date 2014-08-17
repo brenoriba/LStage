@@ -4,7 +4,7 @@ local server_version="Lstage webserver 1.0"
 
 function M.response_headers ()
 	local t={
-		Date = os.date ("!%a, %d %b %Y %H:%M:%S GMT"),
+		Date = require'os'.date ("!%a, %d %b %Y %H:%M:%S GMT"),
 		Server = server_version
 	}
 	return t

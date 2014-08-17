@@ -67,7 +67,7 @@ Build project:
 make
 ```
 
-Run:
+Run server:
 
 ```
 lua server.lua
