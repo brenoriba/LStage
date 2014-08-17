@@ -219,7 +219,7 @@ stages.start=lstage.stage(
 			-- Accept a new connection
 			local clientSocket=assert(serverSocket:accept(),"Error while accepting new connection")
 			clientSocket:setoption ("tcp-nodelay", true)
-
+			
 			-- Send request to handle stage
 			assert(stages.handle:push(clientSocket),"Error while handling connection")
 		end

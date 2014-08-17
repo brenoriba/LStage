@@ -76,5 +76,12 @@ lua server.lua
 Run client:
 
 ```
-lua clients.lua
+lua client.lua
+```
+
+Or you can test directly from your browser using one of the URL's bellow:
+
+```
+To run a script inside the server      : http://127.0.0.01:8080/index.lua
+To read a static page inside the server: http://127.0.0.01:8080/index.html
 ```
