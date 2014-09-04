@@ -41,6 +41,7 @@ stages[7] = stage.closeSocket
 controllers.configure(stages,policy,threads,false)
 
 -- Timer event
+--[[
 on_timer=function(id)
 	-- Controllers configuration
 	-- MG1
@@ -55,12 +56,13 @@ on_timer=function(id)
 		dynamic.on_timer(id)
 	end
 end
+--]]
 
 -- Push event to start server
 stage.start:push(defaultPort)
 
 -- Dispatch on_timer events
-lstage.dispatchevents()
+--lstage.dispatchevents()
 
 -- Avoid script to close
 lstage.channel():get()

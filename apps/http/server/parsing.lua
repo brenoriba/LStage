@@ -27,7 +27,6 @@ parsing.read_headers = function(sock,req)
 
 	while true do
 		local l,err = sock:receive()
-
 		if (not l or l == "") then
 			req.headers = headers
 			return

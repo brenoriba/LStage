@@ -15,9 +15,9 @@ local util    = require "util"
 
 -- Global vars
 local stages    = {}
-local instances = 1
+local instances = 2
 
--- Configuration for dynamic page
+-- Scripts directory
 local scriptDir = "scripts/"
 
 -- Close client connection
@@ -50,7 +50,7 @@ stages.cacheLoadFile=lstage.stage(
 
 			-- Send headers
 			clientSocket:send(util.stdresp(res))
-			
+
 			-- Read file and send buffer
 			local content = {}
 			local count   = 0
@@ -219,7 +219,7 @@ stages.start=lstage.stage(
 			-- Accept a new connection
 			local clientSocket=assert(serverSocket:accept(),"Error while accepting new connection")
 			clientSocket:setoption ("tcp-nodelay", true)
-			
+
 			-- Send request to handle stage
 			assert(stages.handle:push(clientSocket),"Error while handling connection")
 		end

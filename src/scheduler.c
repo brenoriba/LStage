@@ -98,13 +98,15 @@ static void thread_resume_instance(instance_t i) {
 			break;
 		case I_WAITING_IO:
 			i->flags=I_READY;
+
 			lua_pushliteral(L,STAGE_HANDLER_KEY);
 			lua_gettable(L,LUA_REGISTRYINDEX);
 			lua_pushboolean(L,1);
+			stackDump(L,"teste");
 			if(lua_pcall(i->L,1,0,0)) {
-		      const char * err=lua_tostring(L,-1);
-		      fprintf(stderr,"Error resuming instance: %s\n",err);
-		   }
+		      		const char * err=lua_tostring(L,-1);
+				fprintf(stderr,"[I_WAITING_IO] Error resuming instance: %s\n",err);
+		   	}
 		   break;
 		case I_TIMEOUT_IO:
 			i->flags=I_READY;
@@ -113,7 +115,7 @@ static void thread_resume_instance(instance_t i) {
 			lua_pushboolean(L,0);
 			if(lua_pcall(i->L,1,0,0)) {
 		      const char * err=lua_tostring(L,-1);
-		      fprintf(stderr,"Error resuming instance: %s\n",err);
+		      fprintf(stderr,"[I_TIMEOUT_IO] Error resuming instance: %s\n",err);
 		   }
 		   break;
 		   
@@ -130,7 +132,7 @@ static void thread_resume_instance(instance_t i) {
 				
 				if(lua_pcall(L,1,1,0)) {
 					const char * err=lua_tostring(L,-1);
-					fprintf(stderr,"Error decoding event: %s\n",err);
+					fprintf(stderr,"[I_READY] Error decoding event: %s\n",err);
 					break;
 				}
 				
@@ -162,7 +164,7 @@ static void thread_resume_instance(instance_t i) {
 			
 			if(lua_pcall(L,i->args,0,0)) {
 				const char * err=lua_tostring(L,-1);
-				fprintf(stderr,"Error resuming instance: %s\n",err);
+				fprintf(stderr,"[I_READY] Error resuming instance: %s\n",err);
 			} 
 			break;
 		case I_WAITING_EVENT:
@@ -203,7 +205,7 @@ static THREAD_RETURN_T THREAD_CALLCONV thread_mainloop(void *t_val) {
       		thread_resume_instance(i);
 	// No instance
 	} else {
-		//break;
+		break;
 	}
    }
 
