@@ -22,20 +22,28 @@ local scriptDir = "scripts/"
 
 -- Close client connection
 stages.closeSocket=lstage.stage(
-	function(clientSocket)
-		clientSocket:close()
+	function(clientSocket, close)
+		-- Close connection
+		if (close) then		
+			clientSocket:close()
+		-- Send connection again to handle stage
+		-- The user will continue making requests
+		else
+			clientSocket:close()			
+			--assert(stages.handle:push(clientSocket),"Error while handling connection")
+		end
 	end,instances)
 
 -- Load cache file
 stages.cacheLoadFile=lstage.stage(
-	function(clientSocket, fileName)
+	function(clientSocket, reqData)
 		-- Imports		
 		require 'table'
 		require 'io'
 		cache=require 'cache'
 
 		local res    = { headers=util.response_headers() }
-		local script = scriptDir..fileName
+		local script = scriptDir..reqData.relpath
 		local file   = io.open(script,"r")
 
 		-- File was found
@@ -63,10 +71,7 @@ stages.cacheLoadFile=lstage.stage(
 			clientSocket:send(html)
 
 			-- Save into cache
-			cache.put(fileName,html)
-
-			-- Close client socket
-			stages.closeSocket:push(clientSocket)
+			cache.put(reqData.relpath,html)
 
 		-- File not found
 		else
@@ -81,19 +86,20 @@ stages.cacheLoadFile=lstage.stage(
 			-- Send result back to the client
 			clientSocket:send(util.stdresp(res))
 			clientSocket:send(body)
-
-			-- Close client socket
-			stages.closeSocket:push(clientSocket)
 		end
+
+		-- Close client socket
+		local closeConn = reqData.headers['connection']=="close"
+		stages.closeSocket:push(clientSocket, closeConn)
 	end,instances)
 
 -- Access cache buffer
 stages.cacheBuffer=lstage.stage(
-	function(clientSocket, file)
+	function(clientSocket, reqData)
 		require 'table'
 		cache=require 'cache'
 
-		local content   = cache.get(file)
+		local content   = cache.get(reqData.relpath)
 		local res       = {headers = util.response_headers()}
 	 	res.status_code = 200
 
@@ -106,7 +112,8 @@ stages.cacheBuffer=lstage.stage(
 		clientSocket:send(content)
 
 		-- Close client connection	
-		stages.closeSocket:push(clientSocket)
+		local closeConn = reqData.headers['connection']=="close"
+		stages.closeSocket:push(clientSocket, closeConn)
 	end,instances)
 
 -- Cache handler
@@ -116,12 +123,12 @@ stages.cacheHandler=lstage.stage(
 
 		-- Found in cache (access buffer)
 		if c_cache.has(reqData.relpath) then
-			stages.cacheBuffer:push(clientSocket,reqData.relpath)
+			stages.cacheBuffer:push(clientSocket,reqData)
 		-- Not found in cache (load to cache)
 		else
-			stages.cacheLoadFile:push(clientSocket,reqData.relpath)
+			stages.cacheLoadFile:push(clientSocket,reqData)
 		end
-	end,1)
+	end)
 
 -- Run Lua script
 stages.runScript=lstage.stage(
@@ -165,7 +172,8 @@ stages.runScript=lstage.stage(
 		end
 
 		-- Close client socket
-		stages.closeSocket:push(clientSocket)
+		local closeConn = reqData.headers['connection']=="close"
+		stages.closeSocket:push(clientSocket, closeConn)
 	end, instances)
 
 -- Handle incoming connections
@@ -176,7 +184,6 @@ stages.handle=lstage.stage(
 
 		-- Error check
 		if not data then
-			print("Error receiving from client: ", err)
 			stages.closeSocket:push(clientSocket)
 			return
 		end
@@ -195,7 +202,7 @@ stages.handle=lstage.stage(
 
 		-- Main page
 		if reqData.relpath == "/" then
-	      		reqData.relpath="scripts/index.html"
+	      		reqData.relpath="index.html"
 	   	end
 
 		-- Show dynamic content (run script)
@@ -223,6 +230,6 @@ stages.start=lstage.stage(
 			-- Send request to handle stage
 			assert(stages.handle:push(clientSocket),"Error while handling connection")
 		end
-	end, 1)
+	end)
 
 return stages
