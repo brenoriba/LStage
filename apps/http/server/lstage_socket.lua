@@ -40,7 +40,7 @@ if tcp_client_mt then
       local old_receive=tcp_client_mt.__index.receive
       tcp_client_mt.__index.receive=function(sock,...)
 	 --TODO: fix
-         --sock:settimeout(0.0)
+         sock:settimeout(0.0)
          local data = old_receive(sock,...)
          if data then
             return data
