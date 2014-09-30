@@ -19,7 +19,7 @@ local instanceControl = false
 
 -- Input directory 
 -- Change this if you want to get images from another folder
-local inputDir  = "in/in_big/"
+local inputDir  = "in/"
 
 -- Number of threads (per stage in case of SEDA)
 local threads = 2
