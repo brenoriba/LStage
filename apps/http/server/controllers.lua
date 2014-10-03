@@ -8,11 +8,12 @@
 ]]--
 
 -- Controllers
-local lstage  = require 'lstage'
-local srpt    = require 'lstage.controllers.srpt'
-local mg1     = require 'lstage.controllers.mg1'
-local dynamic = require 'lstage.controllers.dynamic'
-local seda    = require 'lstage.controllers.seda'
+local lstage       = require 'lstage'
+local srpt         = require 'lstage.controllers.srpt'
+local mg1          = require 'lstage.controllers.mg1'
+local dynamic      = require 'lstage.controllers.dynamic'
+local seda         = require 'lstage.controllers.seda'
+local workstealing = require 'lstage.controllers.workstealing'
 
 -- Global vars
 local wrapper = {}
@@ -49,6 +50,12 @@ end
 wrapper.seda = function (stagesTable, threads)
 	-- stagesTable, threadsPerPool
 	seda.configure(stagesTable, threads)
+end
+
+-- Workstealing configure method
+wrapper.workstealing = function (stagesTable, threads)
+	-- stagesTable, threadsPerPool
+	workstealing.configure(stagesTable, threads)
 end
 
 -- DYNAMIC configure method
@@ -102,6 +109,9 @@ wrapper.configure = function (stages, policy, threads, instanceControl)
 	
 		-- Creating threads
 		lstage.pool:add(threads)
+	elseif (policy == "WORKSTEALING") then
+		print("Creating "..threads.." thread(s)")
+		wrapper.workstealing (stages, threads)
 	end
 
 	print("Configuring ["..policy.."] policy")

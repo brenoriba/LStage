@@ -21,7 +21,7 @@ local defaultPort = 8080
 
 -- Available controllers
 -- {SRPT,MG1,SEDA,DYNAMIC,COLOR}
-local policy  = "COLOR"
+local policy  = "WORKSTEALING"
 
 -- Number of threads (per stage in case of SEDA)
 local threads = 2
@@ -53,6 +53,12 @@ on_timer=function(id)
 	if (policy == "DYNAMIC") then
 		local dynamic = require 'lstage.controllers.dynamic'
 		dynamic.on_timer(id)
+	end
+
+	-- Workstealing
+	if (policy == "WORKSTEALING") then
+		local workstealing = require 'lstage.controllers.workstealing'
+		workstealing.on_timer(id)
 	end
 end
 
