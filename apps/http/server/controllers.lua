@@ -53,9 +53,9 @@ wrapper.seda = function (stagesTable, threads)
 end
 
 -- Workstealing configure method
-wrapper.workstealing = function (stagesTable, threads)
+wrapper.workstealing = function (stagesTable, threads, queueThreshold)
 	-- stagesTable, threadsPerPool
-	workstealing.configure(stagesTable, threads)
+	workstealing.configure(stagesTable, threads, refresh, queueThreshold)
 end
 
 -- DYNAMIC configure method
@@ -111,7 +111,7 @@ wrapper.configure = function (stages, policy, threads, instanceControl)
 		lstage.pool:add(threads)
 	elseif (policy == "WORKSTEALING") then
 		print("Creating "..threads.." thread(s)")
-		wrapper.workstealing (stages, threads)
+		wrapper.workstealing (stages, threads, queueThreshold)
 	end
 
 	print("Configuring ["..policy.."] policy")

@@ -13,6 +13,7 @@
 
 local workstealing = {}
 local stages 	   = {}
+local threshold    = -1
 local lstage 	   = require 'lstage'
 local pool   	   = require 'lstage.pool'
 local sort         = require 'lstage.utils.mergesort'
@@ -23,8 +24,10 @@ local sort         = require 'lstage.utils.mergesort'
 	</summary>
 	<param name="stagesTable">LEDA stages table</param>
 	<param name="threadsPerPool">Number of threads to be created per pool</param>
+	<param name="refreshSeconds">Time (in seconds) to refresh stage's rate</param>
+	<param name="queueThreshold">Queue threshold to stole threads</param>
 ]]--
-function workstealing.configure (stagesTable, threadsPerPool)
+function workstealing.configure (stagesTable, threadsPerPool, refreshSeconds, queueThreshold)
 	-- Creating a pool per stage
 	for index=1,#stagesTable do
 		-- New pool
@@ -35,8 +38,9 @@ function workstealing.configure (stagesTable, threadsPerPool)
 		stagesTable[index]:setpool(currentPool)
 	end
 
-	-- Save to monitor threads	
-	stages = stagesTable
+	-- Save to monitor threads
+	stages    = stagesTable
+	threshold = queueThreshold
 
 	-- Every "refreshSeconds" with ID = 100
 	lstage.add_timer(refreshSeconds, 100)
@@ -68,15 +72,24 @@ function workstealing.on_timer(id)
 
 	-- Manage threads
 	for index=#queueSizes,1,-1 do
-		-- Searching for stages that can give threads
-		for j=index-1,1,-1 do
-			-- We must have at least one thread in the thread pool
-			-- and we must have instances to run one more thread
-			if (stages[j].pool:size() > 1 and stages[index]:instancesize() > stages[index].pool:size()) then
-				print("Moving a thread to another stage...")
+		local stolen = false
 
-				stages[j].pool:kill()
-				stages[index].pool:add(1)
+		-- We steal threads if queue is above some rate
+		if (queueSizes[index].queueSize >= threshold) then
+			-- Searching for stages that can give threads
+			for j=index-1,1,-1 do
+				-- We must have at least one thread in the thread pool
+				-- and we must have instances to run one more thread
+				if (not stolen and 
+				    stages[j].pool:size() > 1 and 
+				    stages[index]:instancesize() > stages[index].pool:size()) then
+
+					print("Moving a thread to another stage...")
+
+					stages[j].pool:kill()
+					stages[index].pool:add(1)
+					stolen = true
+				end
 			end
 		end
 	end
