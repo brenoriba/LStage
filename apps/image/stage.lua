@@ -19,6 +19,9 @@ local debug 	= false
 -- (we use the same as the number of threads)
 local instances = 2
 
+-- How many images will be thrown in grayscale stage
+local blockSize = 400
+
 -- Timer
 local start = lstage.now()
 
@@ -40,8 +43,8 @@ stage.save=lstage.stage(
 		end
 
 		--if (debug) then
-			local time = lstage.now()-start
-			print("[out] "..relative.." [secs] "..time)
+			--local time = lstage.now()-start
+			--print("[out] "..relative.." [secs] "..time)
 		--end
 	end,instances)
 
@@ -56,6 +59,9 @@ stage.invert=lstage.stage(
 
 		-- Invert pixels
 		imglib.invert(img)
+
+		local time = lstage.now()-start
+		print("[out] "..filename.." [secs] "..time)
 
 		-- Push into another stage
 		local msg = "[stage_save] Error while saving image "..filename
@@ -160,17 +166,40 @@ stage.grayscale=lstage.stage(
 -- Load images from disk
 stage.load={}
 stage.load=lstage.stage(
-	function(inputDir, filename)
-		if (debug) then	
-			print("[in] "..inputDir.."/"..filename)
+	function(inputDir, files)
+		local imgs = {}
+
+		-- Loading a block of images
+		for i=1,#files do
+			if (debug) then	
+				print("[in] "..inputDir.."/"..files[i])
+			end
+
+			local img,err = imglib.load (inputDir,files[i])
+			if not (err) then
+				imgs[#imgs+1]        = {}				
+				imgs[#imgs].img      = img
+				imgs[#imgs].filename = files[i]
+			else
+				print("[stage_load] "..err)
+			end
 		end
 
-		local img,err = imglib.load (inputDir,filename)
-		if not (err) then
-			local msg = "[stage_grayscale] Error while applying grayscale into " .. filename
-			assert(stage.grayscale:push(img,filename),msg)			
-		else
-			print("[stage_load] "..err)
+		-- We don't want to count I\O
+		start = lstage.now()
+
+		-- Push all images into grayscale stage
+		local msg = "[stage_grayscale] Error while applying grayscale into "
+	        local count = 0
+		for i=1,#imgs do
+			assert(stage.grayscale:push(imgs[i].img,imgs[i].filename),msg..imgs[i].filename)
+			count = count + 1
+
+			-- Wait for another block		
+			if (count == blockSize) then
+				lstage.event.sleep(0.8)
+				count = 0
+			end
 		end
 	end,1)
 

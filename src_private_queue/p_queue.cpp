@@ -48,13 +48,16 @@ void lstage_pqueue_push(Pqueue_t q,void ** source) {
 }
 
 void lstage_pqueue_pop(Pqueue_t q, instance_t* destination) {
-	q->queue->try_pop(*destination);
+	while(!q->queue->try_pop(*destination)) {
+		pthread_mutex_lock(&q->mutex);
+		pthread_cond_wait(&q->cond, &q->mutex);
+		pthread_mutex_unlock(&q->mutex);
+	}
 }
 
-void lstage_pqueue_lock_and_wait (Pqueue_t q) {
-	pthread_mutex_lock(&q->mutex);
-	pthread_cond_wait(&q->cond, &q->mutex);
-	pthread_mutex_unlock(&q->mutex);
+// Try once to get an instance
+int lstage_pqueue_try_pop(Pqueue_t q, instance_t* destination) {
+	return q->queue->try_pop(*destination);
 }
 
 int lstage_pqueue_isempty(Pqueue_t q) {

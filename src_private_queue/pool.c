@@ -95,8 +95,6 @@ static int pool_new(lua_State *L) {
 	if(size<0) luaL_error(L,"Initial pool size must be greater than zero");
 	pool_t p=malloc(sizeof(struct pool_s));
 	p->size=0;
-	p->steal=0;
-	p->lock=0;
 	p->ready=lstage_pqueue_new();
 	//lstage_lfqueue_setcapacity(p->ready,-1);
 	lstage_buildpool(L,p);

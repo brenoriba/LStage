@@ -27,21 +27,22 @@ enum stage_flag_t {
 struct lstage_Stage {
    LFqueue_t instances;   // Instances queue
    LFqueue_t event_queue; // Events queue (when we don't have instances to run)
+   Pqueue_t ready_queue;  // Events combined with instances
    pool_t pool; 	  // Stage pool
    int init_time; 	  // Stage creation time to measure throughput (processed_count / now - init_time)
    int processed; 	  // Number of events processed
    int enabled; 	  // If the stage is enabled or disabled to receive new queries
-   int fire_priority;	  // Fire event new priority changes
    char * env;
    size_t env_len;
    volatile unsigned int flags;
    volatile int priority;
    stage_t parent;
+   
+   // Used on polling table [scheduler.c]
+   stage_t prior;
+   stage_t next;
 
-   // Workstealing
    int lock;
-   int steal;
-   pool_t fromPool;
 };
 
 stage_t lstage_tostage(lua_State *L, int i);

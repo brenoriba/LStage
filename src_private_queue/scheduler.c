@@ -121,7 +121,7 @@ static void thread_resume_instance(instance_t i) {
 		   
 		// Ready to execute event
 		case I_READY:
-			if(i->ev) {				
+			if(i->ev) {		
 				lua_pushliteral(L,STAGE_HANDLER_KEY);
 				lua_gettable(L,LUA_REGISTRYINDEX);
 				lua_pushcfunction(L,mar_decode);
@@ -187,59 +187,43 @@ static void thread_resume_instance(instance_t i) {
 	}
 }
 
-// Callback call - "new_priority" function
-static void scheduler_lost_focus (lua_State *L) {
-	lua_getglobal(L, "lost_focus");
-
-	if(lua_type(L,-1)==LUA_TFUNCTION) {
-      		lua_call(L,0,0);
-   	} else {	
-		printf("Lost on_timer callback\n");
-      		lua_pop(L,1);
-	}
- }
-
 // Thread main loop - called when a new thread is created
 // pool.c - "pool_addthread"
 static THREAD_RETURN_T THREAD_CALLCONV thread_mainloop(void *t_val) {
    instance_t i=NULL;
    thread_t self=(thread_t)t_val;
 
+   // stage.c [linked list to use polling tables]
+   extern stage_t firstStage;
+   stage_t currentStage = NULL;
+
    while(1) {
-   	_DEBUG("Thread %p wating for ready instaces\n",self);
+   	_DEBUG("Thread %p wating for ready instances\n",self);
    	self->state=THREAD_IDLE;
 
-	// [Workstealing] If we have to stole a thread
-	LOCK(self->pool);
-	if (self->pool->size > 0 && self->pool->steal > 0) {
-		// Update counter
-		self->pool->steal--;
-
-		// Update pool sizes
-		self->pool->size--;
-		self->pool->toPool->size++;
-
-		// Point thread to another pool
-		self->pool=self->pool->toPool;
+	// We don't have our polling table yet
+	if (firstStage == NULL) {
+		continue;
 	}
-	UNLOCK(self->pool);	
+	else if (currentStage == NULL) {
+		currentStage = firstStage;
+	}
 
-	i=NULL;
-        lstage_pqueue_pop(self->pool->ready,&i);
+	// Get event based on priority using polling table
+	lstage_pqueue_try_pop(currentStage->ready_queue,&i);
 
 	// Instance found
         if(i!=NULL) {
-		// Fire event because priority has changed
-		if (i->stage->fire_priority == 1) {
-			scheduler_lost_focus (i->L);
-	        }
-
 	     	_DEBUG("Thread %p got a ready instance %p\n",self,i);
 	     	self->state=THREAD_RUNNING;
       		thread_resume_instance(i);
-	// No instance (wait for the next instance)
+	// No instance (get next stage)
 	} else {
-		lstage_pqueue_lock_and_wait(self->pool->ready);
+		currentStage = currentStage->next;
+		if (currentStage == NULL) {
+			currentStage = firstStage;
+		}
+		//break;
 	}
    }
 
@@ -274,8 +258,9 @@ static int thread_from_ptr (lua_State *L) {
    return 1;
 }
 
+// Push instance into a stage's ready_queue
 void lstage_pushinstance(instance_t i) {	
-	return lstage_pqueue_push(i->stage->pool->ready,(void **) &(i));
+	return lstage_pqueue_push(i->stage->ready_queue,(void **) &(i));
 }
 
 static const struct luaL_Reg LuaExportFunctions[] = {

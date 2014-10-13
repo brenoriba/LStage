@@ -6,17 +6,10 @@
 #include "lstage.h"
 #include "p_queue.h"
 
-typedef struct pool_s * pool_t;
-
-struct pool_s {
+typedef struct pool_s {
 	volatile size_t size;
 	Pqueue_t ready;
-
-	// Workstealing
-	int steal;
-	int lock;
-	pool_t toPool;
-};
+} * pool_t;
 
 pool_t lstage_topool(lua_State *L, int i);
 void lstage_buildpool(lua_State * L,pool_t t);

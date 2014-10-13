@@ -1,4 +1,5 @@
-local lstage=require'lstage'
+local lstage = require 'lstage'
+local pool   = require 'lstage.pool'
 
 local stage3=lstage.stage(
 	function(name) 
@@ -29,19 +30,33 @@ local stage1=lstage.stage(
 		stage2:push('s2')
 	end,2)
 
---stage1:enablepriorityevent();
+--[[
+local pool1=pool.new(0)
+pool1:add(2)
+stage1:setpool(pool1)
 
-stage1:setpriority(1)
-stage2:setpriority(2)
-stage3:setpriority(3)
+local pool2=pool.new(0)
+pool2:add(2)
+stage2:setpool(pool2)
 
---stage1:steal(stage2,2);
+local pool3=pool.new(0)
+pool3:add(2)
+stage3:setpool(pool1)
 
-new_priority=function()
-	print("Fired!")
+pool1 = stage1:pool()
+pool2 = stage2:pool()
+print(pool1:size())
+print(pool2:size())
+
+-- Workstealing
+stage1:steal(stage2,1);
+--]]
+
+stage1:firewhenlostfocus()
+
+function lost_focus()
+	print("Focus lost!")
 end
-
-lstage.pool:add(1)
 
 for i=1,8 do
    stage1:push('s1')

@@ -11,13 +11,15 @@
 #define DEFAULT_I_IDLE_CAPACITY 10
 #define DEFAULT_QUEUE_CAPACITY -1
 
-// Define LOCK and UNLOCK
-#define LOCK(q) while (__sync_lock_test_and_set(&(q)->lock,1)) {}
-#define UNLOCK(q) __sync_lock_release(&(q)->lock);
-
 static void get_metatable(lua_State * L);
 extern pool_t lstage_defaultpool;
 static pthread_mutex_t lock;
+
+// Used to build polling table
+stage_t firstStage = NULL;
+stage_t priorStage = NULL;
+stage_t currentStage = NULL;
+int stagesCount = 0;
 
 stage_t lstage_tostage(lua_State *L, int i) {
 	stage_t * s = luaL_checkudata (L, i, LSTAGE_STAGE_METATABLE);
@@ -114,7 +116,7 @@ static int stage_push(lua_State *L) {
       lua_pushvalue(L,i);
       lua_rawseti(L,-2,i-1);
    }
-   
+
    lua_call(L,1,1);
    size_t len;
    const char * str=lua_tolstring(L,-1,&len);
@@ -126,7 +128,9 @@ static int stage_push(lua_State *L) {
    if (lstage_lfqueue_try_pop (s->instances,&ins)) {
    	ins->ev=ev;
 	ins->flags=I_READY;
+
 	lstage_pushinstance(ins);
+
 	lua_pushvalue(L,1);
 	return 1;
    
@@ -134,8 +138,8 @@ static int stage_push(lua_State *L) {
    } else if (lstage_lfqueue_try_push(s->event_queue,&ev)) {
       lua_pushvalue(L,1);
       return 1;
-   } 
-   
+   }
+
    // Ignore event - queue is full
    lstage_destroyevent(ev);
    lua_pushnil(L);
@@ -299,50 +303,16 @@ static int stage_throughput (lua_State * L) {
 	return 1;
 }
 
-// Steal a thread from another stage
-static int stage_stealthread (lua_State * L) {
-    // Input parameters
-    stage_t to    = lstage_tostage (L,1);
-    stage_t from  = lstage_tostage (L,2);
-    int     count = lua_tointeger  (L,3);
-
-    // We can steal a thread (when it's IDLE)
-    // Check [thread_mainloop] in [scheduler.c]
-    from->pool->lock=0;
-    LOCK(from->pool);
-    if (from->pool->size > 1) {
-       from->pool->steal+=count;
-       from->pool->toPool=to->pool;
-    }
-    UNLOCK(from->pool);
-
-    return 1;
-}
-
-// Enable priority event
-static int stage_fire_when_lost_focus (lua_State * L) {
-    stage_t s = lstage_tostage (L,1);
-    s->fire_priority = 1;
-
-    lua_pushvalue(L,1);
-    return 1;
-}
-
-// Disable priority event
-static int stage_do_not_fire_when_lost_focus (lua_State * L) {
-    stage_t s = lstage_tostage (L,1);
-    s->fire_priority = 0;
-
-    lua_pushvalue(L,1);
-    return 1;
-}
-
 // Set stage priority
 static int stage_setpriority(lua_State * L) {
 	stage_t s = lstage_tostage(L, 1);
 	int p=lua_tointeger(L,2);
 	s->priority=p;
 	lua_pushvalue(L,1);
+
+	// Reorganize linked list
+	
+
 	return 1;
 }
 
@@ -387,9 +357,6 @@ static const struct luaL_Reg StageMetaFunctions[] = {
 		{"enable",stage_enable},
 		{"active",stage_active},
 		{"throughput",stage_throughput},
-		{"steal",stage_stealthread},
-		{"firewhenlostfocus",stage_fire_when_lost_focus},
-		{"donotfirewhenlostfocus",stage_do_not_fire_when_lost_focus},
 		{NULL,NULL}
 };
 
@@ -421,6 +388,28 @@ static int stage_isstage(lua_State * L) {
 	return 1;
 }
 
+// Add stage into polling table
+static void stage_addintopollingtable (stage_t s) {
+	stagesCount++;
+
+	// First stage
+	if (firstStage == NULL)
+	{
+		firstStage = s;
+		priorStage = NULL;
+		currentStage = s;
+		return;
+	}
+	
+	// Set prior and next stage
+	currentStage->prior=priorStage;
+	currentStage->next=s;
+
+	// Update cursor
+	priorStage = currentStage;
+	currentStage = s;
+}
+
 // Creates new stage
 static int lstage_newstage(lua_State * L) {
 	int idle=0;
@@ -433,6 +422,10 @@ static int lstage_newstage(lua_State * L) {
 	   lstage_lfqueue_setcapacity((*stage)->instances,0);
 	   (*stage)->event_queue=lstage_lfqueue_new();
 	   lstage_lfqueue_setcapacity((*stage)->event_queue,DEFAULT_QUEUE_CAPACITY);
+
+	   // Events combined with instances - ready to be processed
+	   (*stage)->ready_queue=lstage_pqueue_new();
+
 	   (*stage)->env=NULL;
 	   (*stage)->env_len=0;
 
@@ -450,10 +443,13 @@ static int lstage_newstage(lua_State * L) {
 	   stage=lua_newuserdata(L,sizeof(stage_t *));
 	   (*stage)=calloc(1,sizeof(struct lstage_Stage));   
 	   (*stage)->instances=lstage_lfqueue_new();
-	   /*if(idle<0) lstage_lfqueue_setcapacity((*stage)->instances,-1);
-	   else */lstage_lfqueue_setcapacity((*stage)->instances,0);
+	   lstage_lfqueue_setcapacity((*stage)->instances,0);
+
 	   (*stage)->event_queue=lstage_lfqueue_new();
 	   lstage_lfqueue_setcapacity((*stage)->event_queue,capacity);
+
+	   (*stage)->ready_queue=lstage_pqueue_new();
+
 	   char *envcp=malloc(len+1);
 	   envcp[len]='\0';
 	   memcpy(envcp,env,len+1);
@@ -466,6 +462,7 @@ static int lstage_newstage(lua_State * L) {
 	(*stage)->pool=lstage_defaultpool;
 	(*stage)->priority=0;
 	(*stage)->enabled=1;
+
   	get_metatable(L);
 
    lua_setmetatable(L,-2);
@@ -484,7 +481,11 @@ static int lstage_newstage(lua_State * L) {
 	}
 	lua_pop(L,1);
 
-   (*stage)->fire_priority = 0;
+   (*stage)->next=NULL;
+   (*stage)->prior=NULL;
+
+   // Add stage into polling table
+   stage_addintopollingtable((*stage));
    return 1;
 }
 
@@ -503,6 +504,7 @@ static int lstage_destroystage(lua_State * L) {
 	while(lstage_lfqueue_try_pop(s->event_queue,&e)) 
 		lstage_destroyevent(e);
 	lstage_lfqueue_free(s->event_queue);
+
 	*s_ptr=0;
 	return 0;
 }
