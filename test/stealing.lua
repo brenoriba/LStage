@@ -30,29 +30,30 @@ local stage1=lstage.stage(
 		stage2:push('s2')
 	end,2)
 
---[[
 local pool1=pool.new(0)
-pool1:add(2)
+pool1:add(4)
 stage1:setpool(pool1)
 
 local pool2=pool.new(0)
-pool2:add(2)
+pool2:add(4)
 stage2:setpool(pool2)
 
 local pool3=pool.new(0)
-pool3:add(2)
+pool3:add(4)
 stage3:setpool(pool1)
 
+--[[
 pool1 = stage1:pool()
 pool2 = stage2:pool()
 print(pool1:size())
 print(pool2:size())
+--]]
 
 -- Workstealing
 stage1:steal(stage2,1);
---]]
+stage1:steal(stage2,2);
 
-stage1:firewhenlostfocus()
+--stage1:firewhenlostfocus()
 
 function lost_focus()
 	print("Focus lost!")

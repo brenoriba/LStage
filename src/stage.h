@@ -37,11 +37,6 @@ struct lstage_Stage {
    volatile unsigned int flags;
    volatile int priority;
    stage_t parent;
-
-   // Workstealing
-   int lock;
-   int steal;
-   pool_t fromPool;
 };
 
 stage_t lstage_tostage(lua_State *L, int i);

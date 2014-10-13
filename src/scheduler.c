@@ -202,27 +202,40 @@ static void scheduler_lost_focus (lua_State *L) {
 // Thread main loop - called when a new thread is created
 // pool.c - "pool_addthread"
 static THREAD_RETURN_T THREAD_CALLCONV thread_mainloop(void *t_val) {
-   instance_t i=NULL;
-   thread_t self=(thread_t)t_val;
+   instance_t i		= NULL;
+   steal_t    stealFrom = NULL;
+   thread_t   self	= (thread_t)t_val;
 
    while(1) {
    	_DEBUG("Thread %p wating for ready instaces\n",self);
    	self->state=THREAD_IDLE;
 
 	// [Workstealing] If we have to stole a thread
-	LOCK(self->pool);
-	if (self->pool->size > 0 && self->pool->steal > 0) {
+	stealFrom = NULL;
+        if (lstage_lfqueue_try_pop (self->pool->stealing_queue,&stealFrom)) {
+		LOCK(self->pool);
+
 		// Update counter
-		self->pool->steal--;
+		stealFrom->stealCount--;
 
 		// Update pool sizes
 		self->pool->size--;
-		self->pool->toPool->size++;
+		stealFrom->toPool->size++;
 
 		// Point thread to another pool
-		self->pool=self->pool->toPool;
-	}
-	UNLOCK(self->pool);	
+		self->pool=stealFrom->toPool;
+
+		// We still have to stole threads [put at the end of the queue]
+        	if (stealFrom->stealCount > 0) {
+		        lstage_lfqueue_try_push (self->pool->stealing_queue,&stealFrom);
+		// We don have to steal anymore [destroy object]
+        	} else {
+			free(stealFrom);
+			stealFrom=NULL;
+		}
+
+		UNLOCK(self->pool);
+        }
 
 	i=NULL;
         lstage_pqueue_pop(self->pool->ready,&i);

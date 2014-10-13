@@ -299,24 +299,31 @@ static int stage_throughput (lua_State * L) {
 	return 1;
 }
 
+// Prepare steal object
+steal_t stage_newsteal(pool_t t, int count) {
+   steal_t s     = malloc(sizeof(struct steal_s));
+   s->stealCount = count;
+   s->toPool     = t;
+
+   return s;
+}
+
 // Steal a thread from another stage
 static int stage_stealthread (lua_State * L) {
     // Input parameters
-    stage_t to    = lstage_tostage (L,1);
-    stage_t from  = lstage_tostage (L,2);
-    int     count = lua_tointeger  (L,3);
+    stage_t to     = lstage_tostage (L,1);
+    stage_t from   = lstage_tostage (L,2);
+    int     count  = lua_tointeger  (L,3);
 
     // We can steal a thread (when it's IDLE)
     // Check [thread_mainloop] in [scheduler.c]
-    from->pool->lock=0;
-    LOCK(from->pool);
-    if (from->pool->size > 1) {
-       from->pool->steal+=count;
-       from->pool->toPool=to->pool;
-    }
-    UNLOCK(from->pool);
+    steal_t stealFrom = stage_newsteal(to->pool, count);
 
-    return 1;
+    // Push into stealing queue
+    if (lstage_lfqueue_try_push (from->pool->stealing_queue,&stealFrom)) {
+        return 1;
+    }
+    return 0;
 }
 
 // Enable priority event
