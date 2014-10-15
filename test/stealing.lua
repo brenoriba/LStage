@@ -7,7 +7,7 @@ local stage3=lstage.stage(
 		for ix=0, 10000000 do
 			index = index + 1
 		end
-		print(name)		
+		print(name)						
 	end,2)
 
 local stage2=lstage.stage(
@@ -30,6 +30,7 @@ local stage1=lstage.stage(
 		stage2:push('s2')
 	end,2)
 
+--[[
 local pool1=pool.new(0)
 pool1:add(4)
 stage1:setpool(pool1)
@@ -42,25 +43,27 @@ local pool3=pool.new(0)
 pool3:add(4)
 stage3:setpool(pool1)
 
---[[
 pool1 = stage1:pool()
 pool2 = stage2:pool()
 print(pool1:size())
 print(pool2:size())
---]]
 
 -- Workstealing
 stage1:steal(stage2,1);
 stage1:steal(stage2,2);
+--]]
 
---stage1:firewhenlostfocus()
+lstage.pool:add(2);
 
 function lost_focus()
 	print("Focus lost!")
 end
 
+--stage1:firewhenlostfocus()
+
 for i=1,8 do
    stage1:push('s1')
 end
 
+lstage.dispatchevents()
 lstage.channel():get() 

@@ -395,18 +395,18 @@ static void stage_addintopollingtable (stage_t s) {
 	// First stage
 	if (firstStage == NULL)
 	{
-		firstStage = s;
-		priorStage = NULL;
+		firstStage   = s;
+		priorStage   = NULL;
 		currentStage = s;
 		return;
 	}
 	
 	// Set prior and next stage
-	currentStage->prior=priorStage;
-	currentStage->next=s;
+	currentStage->prior = priorStage;
+	currentStage->next  = s;
 
 	// Update cursor
-	priorStage = currentStage;
+	priorStage   = currentStage;
 	currentStage = s;
 }
 
@@ -419,7 +419,7 @@ static int lstage_newstage(lua_State * L) {
  	   stage=lua_newuserdata(L,sizeof(stage_t *));
 	   (*stage)=malloc(sizeof(struct lstage_Stage));   
 	   (*stage)->instances=lstage_lfqueue_new();
-	   lstage_lfqueue_setcapacity((*stage)->instances,0);
+	   lstage_lfqueue_setcapacity((*stage)->instances,DEFAULT_QUEUE_CAPACITY);
 	   (*stage)->event_queue=lstage_lfqueue_new();
 	   lstage_lfqueue_setcapacity((*stage)->event_queue,DEFAULT_QUEUE_CAPACITY);
 
@@ -443,7 +443,7 @@ static int lstage_newstage(lua_State * L) {
 	   stage=lua_newuserdata(L,sizeof(stage_t *));
 	   (*stage)=calloc(1,sizeof(struct lstage_Stage));   
 	   (*stage)->instances=lstage_lfqueue_new();
-	   lstage_lfqueue_setcapacity((*stage)->instances,0);
+	   lstage_lfqueue_setcapacity((*stage)->instances,capacity);
 
 	   (*stage)->event_queue=lstage_lfqueue_new();
 	   lstage_lfqueue_setcapacity((*stage)->event_queue,capacity);

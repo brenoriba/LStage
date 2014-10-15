@@ -58,6 +58,19 @@ on_timer=function(id)
 	end
 end
 
+--[[
+local loop = 1
+while true do
+	print("\n*** Loop - " .. loop)
+	loop = loop + 1
+	for i=1,#stages do
+		local queueSize = stages[i]:size() + stages[i]:instances() - stages[i]:instancesize()
+		print("["..i.."] "..queueSize)
+	end
+	lstage.event.sleep(5)
+end
+--]]
+
 -- Dispatch on_timer events
 lstage.dispatchevents()
 

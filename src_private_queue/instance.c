@@ -47,18 +47,13 @@ void lstage_initinstance(instance_t i) {
 }
 
 instance_t lstage_newinstance(stage_t s) {
-   lua_State * L = luaL_newstate();
+   	lua_State * L = luaL_newstate();
 	instance_t i=malloc(sizeof(struct instance_s));
 	i->L=L;
 	i->stage=s;
 	i->flags=I_CREATED;
 	i->ev=NULL;
-	//lstage_pushinstance(i);
-	
-	if(!lstage_lfqueue_try_push(s->instances,&i)) {
-		_DEBUG("Instances FULL, destroying %p\n",i);
-		lstage_destroyinstance(i);
-	}
+	lstage_pushinstance(i);
 
 	return i;
 }

@@ -223,7 +223,6 @@ static THREAD_RETURN_T THREAD_CALLCONV thread_mainloop(void *t_val) {
 		if (currentStage == NULL) {
 			currentStage = firstStage;
 		}
-		//break;
 	}
    }
 

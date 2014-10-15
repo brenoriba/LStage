@@ -187,18 +187,6 @@ static void thread_resume_instance(instance_t i) {
 	}
 }
 
-// Callback call - "new_priority" function
-static void scheduler_lost_focus (lua_State *L) {
-	lua_getglobal(L, "lost_focus");
-
-	if(lua_type(L,-1)==LUA_TFUNCTION) {
-      		lua_call(L,0,0);
-   	} else {	
-		printf("Lost on_timer callback\n");
-      		lua_pop(L,1);
-	}
- }
-
 // Thread main loop - called when a new thread is created
 // pool.c - "pool_addthread"
 static THREAD_RETURN_T THREAD_CALLCONV thread_mainloop(void *t_val) {
@@ -244,7 +232,7 @@ static THREAD_RETURN_T THREAD_CALLCONV thread_mainloop(void *t_val) {
         if(i!=NULL) {
 		// Fire event because priority has changed
 		if (i->stage->fire_priority == 1) {
-			scheduler_lost_focus (i->L);
+			//lstage_focus_was_lost();
 	        }
 
 	     	_DEBUG("Thread %p got a ready instance %p\n",self,i);
@@ -252,7 +240,7 @@ static THREAD_RETURN_T THREAD_CALLCONV thread_mainloop(void *t_val) {
       		thread_resume_instance(i);
 	// No instance (wait for the next instance)
 	} else {
-		lstage_pqueue_lock_and_wait(self->pool->ready);
+		lstage_pqueue_lock_and_wait(self->pool->ready);		
 	}
    }
 

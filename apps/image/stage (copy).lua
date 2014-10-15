@@ -20,7 +20,7 @@ local debug 	= false
 local instances = 2
 
 -- How many images will be thrown in grayscale stage
-local blockSize = 100
+local blockSize = 1
 
 -- Save images
 stage.save={}
@@ -55,9 +55,7 @@ stage.invert=lstage.stage(
 		end
 
 		-- Invert pixels
-		--for i=1,100 do
-			imglib.invert(img)
-		--end
+		imglib.invert(img)
 
 		local time = lstage.now()-timers.nio
 		print("[WITHOUT IO][out] "..filename.." [secs] "..time)
@@ -82,9 +80,7 @@ stage.second_threshold=lstage.stage(
 			return
 		end
 
-		--for i=1,100 do
-			imglib.threshold(img,threshold,maxValue)
-		--end
+		imglib.threshold(img,threshold,maxValue)
 
 		-- Push into another stage
 		local msg = "[stage_invert] Error while applying invert into "..filename
@@ -107,9 +103,7 @@ stage.blur=lstage.stage(
 		end
 
 		-- Apply blur
-		--for i=1,100 do
-			imglib.blur(img,2)
-		--end
+		imglib.blur(img,2)
 
 		-- Push into another stage
 		local msg = "[stage_second_threshold] Error while applying threshold into "..filename
@@ -130,10 +124,8 @@ stage.first_threshold=lstage.stage(
 		if (img == nil) then
 			return
 		end
-
-		--for i=1,100 do	
-			imglib.threshold(img,threshold,maxValue)
-		--end
+	
+		imglib.threshold(img,threshold,maxValue)
 
 		-- Push into another stage
 		local msg = "[stage_blur] Error while applying blur into "..filename
@@ -155,9 +147,7 @@ stage.grayscale=lstage.stage(
 			return
 		end
 
-		--for i=1,100 do
-			imglib.grayscale(img)
-		--end
+		imglib.grayscale(img)
 
 		-- Push into another stage
 		local msg = "[stage_first_threshold] Error while applying first threshold into "..filename
