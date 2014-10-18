@@ -210,6 +210,7 @@ static THREAD_RETURN_T THREAD_CALLCONV thread_mainloop(void *t_val) {
 	}
 
 	// Get event based on priority using polling table
+	i=NULL;
 	lstage_pqueue_try_pop(currentStage->ready_queue,&i);
 
 	// Instance found

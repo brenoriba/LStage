@@ -53,7 +53,13 @@ instance_t lstage_newinstance(stage_t s) {
 	i->stage=s;
 	i->flags=I_CREATED;
 	i->ev=NULL;
-	lstage_pushinstance(i);
+	//lstage_pushinstance(i);
+
+	lstage_initinstance(i);
+	if(!lstage_lfqueue_try_push(i->stage->instances,&i)) {
+		_DEBUG("Instances FULL, destroying %p\n",i);
+		lstage_destroyinstance(i);
+	}
 
 	return i;
 }

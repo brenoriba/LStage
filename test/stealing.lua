@@ -49,11 +49,11 @@ print(pool1:size())
 print(pool2:size())
 
 -- Workstealing
-stage1:steal(stage2,1);
-stage1:steal(stage2,2);
+stage1:steal(stage2,1)
+stage1:steal(stage2,2)
 --]]
 
-lstage.pool:add(2);
+lstage.pool:add(2)
 
 function lost_focus()
 	print("Focus lost!")
@@ -61,9 +61,9 @@ end
 
 --stage1:firewhenlostfocus()
 
-for i=1,8 do
+for i=1,3 do
    stage1:push('s1')
 end
 
 lstage.dispatchevents()
-lstage.channel():get() 
+lstage.channel():get()
