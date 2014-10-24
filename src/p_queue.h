@@ -12,6 +12,7 @@ typedef struct Pqueue_s * Pqueue_t;
 Pqueue_t lstage_pqueue_new();
 void lstage_pqueue_push(Pqueue_t q,void ** source);
 void lstage_pqueue_pop(Pqueue_t q, instance_t* destination);
+int lstage_pqueue_try_pop(Pqueue_t q, instance_t* destination);
 void lstage_pqueue_lock_and_wait (Pqueue_t q);
 void lstage_pqueue_setcapacity(Pqueue_t q, int capacity);
 int lstage_pqueue_getcapacity(Pqueue_t q);

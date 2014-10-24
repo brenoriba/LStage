@@ -29,6 +29,8 @@ static struct timeval wall_start;
 static clock_t cpu_start;
 static int cpus_count;
 
+// Use public or private ready queue
+volatile enum lstage_private_queue_flag use_private_queue = I_GLOBAL_QUEUE;
 
 //can be found here  http://www.lua.org/pil/24.2.3.html
 void stackDump (lua_State *L, const char *text) {
@@ -143,25 +145,25 @@ static void lstage_timer_event (evutil_socket_t fd, short events, void *arg) {
 	}
  }
 
-static void lstage_lost_focus_event (evutil_socket_t fd, short events, void *arg) {
+static void lstage_event_focused (evutil_socket_t fd, short events, void *arg) {
 	// Sanity check
 	if (L_main == NULL) {
 		return;
 	}
 
 	// Call "lost_focus" function
-	lua_getglobal(L_main, "lost_focus");
+	lua_getglobal(L_main, "is_focused");
 
 	if(lua_type(L_main,-1)==LUA_TFUNCTION) {
       		lua_call(L_main,0,0);
    	} else {	
-		printf("Lost 'lost_focus' callback\n");
+		printf("Lost 'is_focused' callback\n");
       		lua_pop(L_main,1);
 	}
  }
 
 // Fire event when thread focus another stage
-void lstage_focus_was_lost () {
+void lstage_stage_was_focused () {
 	// Stored in [dispatch_events] function
 	if (L_main == NULL) {
 		return;
@@ -178,7 +180,7 @@ void lstage_focus_was_lost () {
 	}
 
 	// Configuring "lost_focus" event
-   	event_base_once(lstage_event_base, -1, EV_READ, lstage_lost_focus_event, 0, NULL);
+   	event_base_once(lstage_event_base, -1, EV_READ, lstage_event_focused, 0, NULL);
 }
 
 // Insert timer event
@@ -206,6 +208,33 @@ static int add_timer(lua_State * L) {
    	struct timeval to={t,(t-((int) t))*1000000L};
    	event_add(listener_event, &to);
    	return 0;
+}
+
+// Make use of private or public 'ready queues'
+static int lstage_use_private_queues (lua_State * L) {
+	int n = lua_tointeger(L,1);
+
+	switch(n) {
+		// Public queue
+		case -1:
+			use_private_queue = I_GLOBAL_QUEUE;
+			break;
+		// Private queue with no turning back
+		case 0:
+			use_private_queue = I_PRIVATE_QUEUE;
+			break;
+		// Private queue with turning back
+		case 1:
+			use_private_queue = I_RESTART_PRIVATE_QUEUE;
+			break;
+	};
+
+	return 0;
+}
+
+// Get ready queue type (private or public)
+enum lstage_private_queue_flag lstage_get_ready_queue_type () {
+	return use_private_queue;
 }
 
 // Dispatch on_timer events
@@ -288,6 +317,7 @@ static const struct luaL_Reg LuaExportFunctions[] = {
 	{"setmetatable",lstage_setmetatable},
 	{"self",lstage_getself},
 	{"add_timer", add_timer},
+	{"useprivatequeues", lstage_use_private_queues},
 	{"dispatchevents", dispatch_events},
 	{NULL,NULL}
 	};

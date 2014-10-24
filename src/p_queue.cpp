@@ -47,6 +47,7 @@ void lstage_pqueue_push(Pqueue_t q,void ** source) {
 	pthread_mutex_unlock(&q->mutex);
 }
 
+// Try once to get an instance
 void lstage_pqueue_pop(Pqueue_t q, instance_t* destination) {
 	q->queue->try_pop(*destination);
 }

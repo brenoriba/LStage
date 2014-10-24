@@ -25,18 +25,28 @@ enum stage_flag_t {
 
 // Stage struct
 struct lstage_Stage {
-   LFqueue_t instances;   // Instances queue
-   LFqueue_t event_queue; // Events queue (when we don't have instances to run)
-   pool_t pool; 	  // Stage pool
-   int init_time; 	  // Stage creation time to measure throughput (processed_count / now - init_time)
-   int processed; 	  // Number of events processed
-   int enabled; 	  // If the stage is enabled or disabled to receive new queries
-   int fire_priority;	  // Fire event new priority changes
+   int id;		   // Stage unique ID
+   LFqueue_t instances;    // Instances queue
+   LFqueue_t event_queue;  // Events queue (when we don't have instances to run)
+   Pqueue_t ready_queue;   // Events combined with instances
+   pool_t pool; 	   // Stage pool
+   int init_time; 	   // Stage creation time to measure throughput (processed_count / now - init_time)
+   int processed; 	   // Number of events processed
+   int enabled; 	   // If the stage is enabled or disabled to receive new queries
+   int fire_priority;	   // Fire event new priority changes
+   int max_events; 	   // Max events to run when stage is focused using private ready queues
+   int processed_in_focus; // How many events was processed when focused (used in private queues)
    char * env;
    size_t env_len;
    volatile unsigned int flags;
    volatile int priority;
    stage_t parent;
+
+   // Used on polling table [scheduler.c]
+   stage_t prior;
+   stage_t next;
+
+   int lock;
 };
 
 stage_t lstage_tostage(lua_State *L, int i);

@@ -16,10 +16,17 @@
 #include <lua.h>
 #include <lauxlib.h>
 
+enum lstage_private_queue_flag {
+	I_GLOBAL_QUEUE=0x0,
+	I_RESTART_PRIVATE_QUEUE,
+	I_PRIVATE_QUEUE
+};
+
 #ifdef DEBUG
 void stackDump (lua_State *L, const char *text);
 void tableDump(lua_State *L, int idx, const char* text);
-void lstage_focus_was_lost ();
+void lstage_stage_was_focused ();
+enum lstage_private_queue_flag lstage_get_ready_queue_type ();
 #define _DEBUG(...) //fprintf(stderr,"%s:%d (%s):",__FILE__,__LINE__,__func__); fprintf(stderr,__VA_ARGS__); 
 #else
 #define _DEBUG(...) 

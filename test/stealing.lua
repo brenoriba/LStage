@@ -53,15 +53,15 @@ stage1:steal(stage2,1)
 stage1:steal(stage2,2)
 --]]
 
+-- [-1] global ready queue
+-- [0] private ready queue
+-- [1] private ready queue with turning back
+lstage.useprivatequeues(0)
 lstage.pool:add(2)
+stage1:max_events_when_focused(-1)
 
-function lost_focus()
-	print("Focus lost!")
-end
-
---stage1:firewhenlostfocus()
-
-for i=1,3 do
+for i=1,50 do
+stage1:setpriority(10)
    stage1:push('s1')
 end
 

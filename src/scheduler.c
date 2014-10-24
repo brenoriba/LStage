@@ -14,6 +14,9 @@
 #define LOCK(q) while (__sync_lock_test_and_set(&(q)->lock,1)) {}
 #define UNLOCK(q) __sync_lock_release(&(q)->lock);
 
+// Used in thread_main_loop to count processed events in private ready queue
+static pthread_mutex_t lock;
+
 static int thread_tostring (lua_State *L) {
   thread_t * t = luaL_checkudata (L, 1, LSTAGE_THREAD_METATABLE);
   lua_pushfstring (L, "Thread (%p)", *t);
@@ -151,10 +154,9 @@ static void thread_resume_instance(instance_t i) {
 				i->args=n;
 				
 				// Increment processed count - used to build statistics
-				//i->stage->lock=0;
-				//LOCK(i->stage);
-				//i->stage->processed++;
-				//UNLOCK(i->stage);
+				LOCK(i->stage);
+				i->stage->processed++;
+				UNLOCK(i->stage);
 
 			} else {
 				lua_pushliteral(L,STAGE_HANDLER_KEY);
@@ -194,11 +196,20 @@ static THREAD_RETURN_T THREAD_CALLCONV thread_mainloop(void *t_val) {
    steal_t    stealFrom = NULL;
    thread_t   self	= (thread_t)t_val;
 
+   // stage.c [linked list to use polling tables]
+   extern stage_t firstStage;
+   stage_t currentStage = NULL;
+   int processedEvents = 0;
+
+   // Queue type   
+   enum lstage_private_queue_flag queueFlag = lstage_get_ready_queue_type ();
+
    while(1) {
    	_DEBUG("Thread %p wating for ready instaces\n",self);
-   	self->state=THREAD_IDLE;
+   	self->state=THREAD_IDLE;	
 
 	// [Workstealing] If we have to stole a thread
+	// *** Works only with pool per stage ***
 	stealFrom = NULL;
         if (lstage_lfqueue_try_pop (self->pool->stealing_queue,&stealFrom)) {
 		LOCK(self->pool);
@@ -226,21 +237,97 @@ static THREAD_RETURN_T THREAD_CALLCONV thread_mainloop(void *t_val) {
         }
 
 	i=NULL;
-        lstage_pqueue_pop(self->pool->ready,&i);
+
+	// Get ready instance
+	if (queueFlag == I_GLOBAL_QUEUE)
+		lstage_pqueue_pop(self->pool->ready,&i);
+	// Private queue with no turning back
+	// Private queue with turning back
+	else {
+		// We don't have our polling table yet
+		if (firstStage == NULL) {
+			continue;
+		}
+		else if (currentStage == NULL) {
+			currentStage = firstStage;
+		}
+
+		// Time to change stage (we already processed max number of events)
+		if (currentStage->max_events > 0 && 
+		    currentStage->processed_in_focus > currentStage->max_events) 
+		{
+			currentStage->processed_in_focus = 0;
+
+			// Update cursor
+			currentStage = currentStage->next;
+			if (currentStage == NULL) {
+				currentStage = firstStage;
+			}
+		}
+
+		lstage_pqueue_pop(currentStage->ready_queue,&i);
+	}
 
 	// Instance found
         if(i!=NULL) {
-		// Fire event because priority has changed
-		if (i->stage->fire_priority == 1) {
-			//lstage_focus_was_lost();
-	        }
-
 	     	_DEBUG("Thread %p got a ready instance %p\n",self,i);
 	     	self->state=THREAD_RUNNING;
+		processedEvents = 1;
+
+		// Update new event
+		if (queueFlag == I_PRIVATE_QUEUE || queueFlag == I_RESTART_PRIVATE_QUEUE) {
+			pthread_mutex_lock(&lock);
+			currentStage->processed_in_focus++;
+			pthread_mutex_unlock(&lock);
+		}
+
       		thread_resume_instance(i);
 	// No instance (wait for the next instance)
 	} else {
-		lstage_pqueue_lock_and_wait(self->pool->ready);		
+		switch(queueFlag) {
+			// Public queue
+			case I_GLOBAL_QUEUE:
+				lstage_pqueue_lock_and_wait(self->pool->ready);	
+				break;
+			// Private queue with no turning back
+			case I_PRIVATE_QUEUE:
+				// No instance (get next stage)
+				currentStage->processed_in_focus = 0;
+				currentStage = currentStage->next;
+				if (currentStage == NULL) {
+					currentStage = firstStage;
+				}
+
+				// Fire event because priority has changed
+				if (currentStage->fire_priority == 1) {
+					//lstage_stage_was_focused();
+			        }
+
+				break;
+			// Private queue with turning back
+			case I_RESTART_PRIVATE_QUEUE:
+				// No instance (get first stage it al least one event was processed)
+				currentStage->processed_in_focus = 0;
+
+				// Get next stage (we get first if at least one event was processed)
+				if (processedEvents == 1) {
+					currentStage = firstStage;
+				// No event was processed - get next
+				} else {
+					currentStage = currentStage->next;
+					if (currentStage == NULL) {
+						currentStage = firstStage;
+					}
+				}
+
+				// Fire event because priority has changed
+				if (currentStage->fire_priority == 1) {
+					//lstage_stage_was_focused();
+			        }
+
+				break;
+		};
+		processedEvents = 0;
 	}
    }
 
@@ -270,21 +357,27 @@ static int thread_from_ptr (lua_State *L) {
 	thread_t ** thread=lua_newuserdata(L,sizeof(thread_t));
 	*thread=ptr;
    get_metatable(L);
-   lua_setmetatable(L,-2);   
+   lua_setmetatable(L,-2);
 //   THREAD_CREATE(*thread, thread_mainloop, *thread, 0 );
    return 1;
 }
 
 void lstage_pushinstance(instance_t i) {	
-	return lstage_pqueue_push(i->stage->pool->ready,(void **) &(i));
+   	// Queue type   
+	enum lstage_private_queue_flag queueFlag = lstage_get_ready_queue_type ();
+
+	// Push from global queue
+	if (queueFlag == I_GLOBAL_QUEUE)
+		return lstage_pqueue_push(i->stage->pool->ready,(void **) &(i));
+	// Push from stage's private queue
+	else 
+		return lstage_pqueue_push(i->stage->ready_queue,(void **) &(i));
 }
 
 static const struct luaL_Reg LuaExportFunctions[] = {
-//	{"new_thread",thread_new},
-//	{"kill_thread",thread_kill},
 	{"build",thread_from_ptr},
 	{NULL,NULL}
-	};
+};
 
 LSTAGE_EXPORTAPI	int luaopen_lstage_scheduler(lua_State *L) {
 

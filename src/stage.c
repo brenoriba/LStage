@@ -18,6 +18,13 @@
 static void get_metatable(lua_State * L);
 extern pool_t lstage_defaultpool;
 static pthread_mutex_t lock;
+int stageCount = 0;
+
+// Used to build polling table
+stage_t firstStage = NULL;
+stage_t priorStage = NULL;
+stage_t currentStage = NULL;
+int stagesCount = 0;
 
 stage_t lstage_tostage(lua_State *L, int i) {
 	stage_t * s = luaL_checkudata (L, i, LSTAGE_STAGE_METATABLE);
@@ -326,8 +333,19 @@ static int stage_stealthread (lua_State * L) {
     return 0;
 }
 
-// Enable priority event
-static int stage_fire_when_lost_focus (lua_State * L) {
+// Max events to process when stage is focused by threads
+static int stage_max_events_when_focused (lua_State * L) {
+	stage_t s = lstage_tostage (L,1);
+	int max=lua_tointeger(L,2);
+
+    	s->max_events = max;
+
+    	lua_pushvalue(L,1);
+	return 1;
+}
+
+// Enable focused event
+static int stage_fire_when_focused (lua_State * L) {
     stage_t s = lstage_tostage (L,1);
     s->fire_priority = 1;
 
@@ -335,8 +353,8 @@ static int stage_fire_when_lost_focus (lua_State * L) {
     return 1;
 }
 
-// Disable priority event
-static int stage_do_not_fire_when_lost_focus (lua_State * L) {
+// Disable focused event
+static int stage_do_not_fire_when_focused (lua_State * L) {
     stage_t s = lstage_tostage (L,1);
     s->fire_priority = 0;
 
@@ -349,6 +367,22 @@ static int stage_setpriority(lua_State * L) {
 	stage_t s = lstage_tostage(L, 1);
 	int p=lua_tointeger(L,2);
 	s->priority=p;
+
+	// Queue type
+   	enum lstage_private_queue_flag queueFlag = lstage_get_ready_queue_type ();
+
+	// Reorder linked list
+	if (queueFlag == I_PRIVATE_QUEUE || queueFlag == I_RESTART_PRIVATE_QUEUE) {
+		stage_t stage = firstStage;
+		int lastPriority = -1;
+
+		//while (stage != NULL) {
+			//lastPriority = stage->priority;
+			//stage = stage->next;
+			//printf("%d\n",stage->id);
+		//}
+	}
+
 	lua_pushvalue(L,1);
 	return 1;
 }
@@ -395,8 +429,9 @@ static const struct luaL_Reg StageMetaFunctions[] = {
 		{"active",stage_active},
 		{"throughput",stage_throughput},
 		{"steal",stage_stealthread},
-		{"firewhenlostfocus",stage_fire_when_lost_focus},
-		{"donotfirewhenlostfocus",stage_do_not_fire_when_lost_focus},
+		{"max_events_when_focused",stage_max_events_when_focused},
+		{"firewhenfocused",stage_fire_when_focused},
+		{"donotfirewhenfocused",stage_do_not_fire_when_focused},
 		{NULL,NULL}
 };
 
@@ -428,6 +463,28 @@ static int stage_isstage(lua_State * L) {
 	return 1;
 }
 
+// Add stage into polling table
+static void stage_addintopollingtable (stage_t s) {
+	stagesCount++;
+
+	// First stage
+	if (firstStage == NULL)
+	{
+		firstStage   = s;
+		priorStage   = NULL;
+		currentStage = s;
+		return;
+	}
+	
+	// Set prior and next stage
+	currentStage->prior = priorStage;
+	currentStage->next  = s;
+
+	// Update cursor
+	priorStage   = currentStage;
+	currentStage = s;
+}
+
 // Creates new stage
 static int lstage_newstage(lua_State * L) {
 	int idle=0;
@@ -437,7 +494,7 @@ static int lstage_newstage(lua_State * L) {
  	   stage=lua_newuserdata(L,sizeof(stage_t *));
 	   (*stage)=malloc(sizeof(struct lstage_Stage));   
 	   (*stage)->instances=lstage_lfqueue_new();
-	   lstage_lfqueue_setcapacity((*stage)->instances,0);
+	   lstage_lfqueue_setcapacity((*stage)->instances,DEFAULT_QUEUE_CAPACITY);
 	   (*stage)->event_queue=lstage_lfqueue_new();
 	   lstage_lfqueue_setcapacity((*stage)->event_queue,DEFAULT_QUEUE_CAPACITY);
 	   (*stage)->env=NULL;
@@ -457,8 +514,7 @@ static int lstage_newstage(lua_State * L) {
 	   stage=lua_newuserdata(L,sizeof(stage_t *));
 	   (*stage)=calloc(1,sizeof(struct lstage_Stage));   
 	   (*stage)->instances=lstage_lfqueue_new();
-	   /*if(idle<0) lstage_lfqueue_setcapacity((*stage)->instances,-1);
-	   else */lstage_lfqueue_setcapacity((*stage)->instances,0);
+	   lstage_lfqueue_setcapacity((*stage)->instances,capacity);
 	   (*stage)->event_queue=lstage_lfqueue_new();
 	   lstage_lfqueue_setcapacity((*stage)->event_queue,capacity);
 	   char *envcp=malloc(len+1);
@@ -492,6 +548,19 @@ static int lstage_newstage(lua_State * L) {
 	lua_pop(L,1);
 
    (*stage)->fire_priority = 0;
+   (*stage)->max_events = -1;
+   (*stage)->processed_in_focus = 0;
+
+   (*stage)->next=NULL;
+   (*stage)->prior=NULL;
+
+   // Events combined with instances - ready to be processed
+   (*stage)->ready_queue=lstage_pqueue_new();
+   (*stage)->id = stageCount++;
+
+   // Add stage into polling table
+   stage_addintopollingtable((*stage));
+
    return 1;
 }
 
