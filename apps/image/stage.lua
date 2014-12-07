@@ -17,10 +17,10 @@ local debug 	= false
 
 -- How many instances each stage will have
 -- (we use the same as the number of threads)
-local instances = 2
+local instances = 30
 
 -- How many images will be thrown in grayscale stage
-local blockSize = 100
+local blockSize = 500
 
 -- Save images
 stage.save={}
@@ -54,10 +54,14 @@ stage.invert=lstage.stage(
 			return
 		end
 
+		local count = 0
+		for i=1,10000000 do
+			count = count + 1
+		end
+		local ok = count
+
 		-- Invert pixels
-		--for i=1,100 do
-			imglib.invert(img)
-		--end
+		imglib.invert(img)
 
 		local time = lstage.now()-timers.nio
 		print("[WITHOUT IO][out] "..filename.." [secs] "..time)
@@ -154,6 +158,12 @@ stage.grayscale=lstage.stage(
 		if (img == nil) then
 			return
 		end
+
+		local count = 0
+		for i=1,100000000 do
+			count = count + 1
+		end
+		local ok = count
 
 		--for i=1,100 do
 			imglib.grayscale(img)

@@ -6,7 +6,7 @@
 
 	Use httperf to test connections
 
-	httperf --client=0/1 --server=127.0.0.1 --port=8080 --uri=/index.html --send-buffer=4096 --recv-buffer=16384 --num-conns=500 --num-calls=1
+	httperf --client=0/1 --server=127.0.0.1 --port=8080 --uri=/index.html --send-buffer=4096 --recv-buffer=16384 --num-conns=1000 --num-calls=1
 
 	**********************************************************************************************
 ]]--
@@ -21,10 +21,10 @@ local defaultPort = 8080
 
 -- Available controllers
 -- {SRPT,MG1,SEDA,DYNAMIC,COLOR}
-local policy  = "WORKSTEALING"
+local policy  = "SEDA"
 
 -- Number of threads (per stage in case of SEDA)
-local threads = 2
+local threads = 30
 
 -- Stages table
 local stages = {}

@@ -15,7 +15,7 @@ local util    = require "util"
 
 -- Global vars
 local stages    = {}
-local instances = 2
+local instances = 30
 
 -- Scripts directory
 local scriptDir = "scripts/"

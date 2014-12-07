@@ -12,6 +12,7 @@
 #define stage_h
 
 typedef struct lstage_Stage * stage_t;
+typedef struct lstage_StageCell * stageCell_t;
 
 #define STAGE_HANDLER_KEY "stage-handler"
 
@@ -47,6 +48,11 @@ struct lstage_Stage {
    stage_t next;
 
    int lock;
+};
+
+struct lstage_StageCell {
+   stage_t stage;
+   stageCell_t nextCell;
 };
 
 stage_t lstage_tostage(lua_State *L, int i);

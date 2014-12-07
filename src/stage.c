@@ -20,12 +20,6 @@ extern pool_t lstage_defaultpool;
 static pthread_mutex_t lock;
 int stageCount = 0;
 
-// Used to build polling table
-stage_t firstStage = NULL;
-stage_t priorStage = NULL;
-stage_t currentStage = NULL;
-int stagesCount = 0;
-
 stage_t lstage_tostage(lua_State *L, int i) {
 	stage_t * s = luaL_checkudata (L, i, LSTAGE_STAGE_METATABLE);
 	luaL_argcheck (L, s != NULL, i, "Stage expected");
@@ -368,21 +362,6 @@ static int stage_setpriority(lua_State * L) {
 	int p=lua_tointeger(L,2);
 	s->priority=p;
 
-	// Queue type
-   	enum lstage_private_queue_flag queueFlag = lstage_get_ready_queue_type ();
-
-	// Reorder linked list
-	if (queueFlag == I_PRIVATE_QUEUE || queueFlag == I_RESTART_PRIVATE_QUEUE) {
-		stage_t stage = firstStage;
-		int lastPriority = -1;
-
-		//while (stage != NULL) {
-			//lastPriority = stage->priority;
-			//stage = stage->next;
-			//printf("%d\n",stage->id);
-		//}
-	}
-
 	lua_pushvalue(L,1);
 	return 1;
 }
@@ -463,28 +442,6 @@ static int stage_isstage(lua_State * L) {
 	return 1;
 }
 
-// Add stage into polling table
-static void stage_addintopollingtable (stage_t s) {
-	stagesCount++;
-
-	// First stage
-	if (firstStage == NULL)
-	{
-		firstStage   = s;
-		priorStage   = NULL;
-		currentStage = s;
-		return;
-	}
-	
-	// Set prior and next stage
-	currentStage->prior = priorStage;
-	currentStage->next  = s;
-
-	// Update cursor
-	priorStage   = currentStage;
-	currentStage = s;
-}
-
 // Creates new stage
 static int lstage_newstage(lua_State * L) {
 	int idle=0;
@@ -557,9 +514,6 @@ static int lstage_newstage(lua_State * L) {
    // Events combined with instances - ready to be processed
    (*stage)->ready_queue=lstage_pqueue_new();
    (*stage)->id = stageCount++;
-
-   // Add stage into polling table
-   stage_addintopollingtable((*stage));
 
    return 1;
 }

@@ -143,7 +143,7 @@ static void lstage_timer_event (evutil_socket_t fd, short events, void *arg) {
 		printf("Lost on_timer callback\n");
       		lua_pop(L_main,1);
 	}
- }
+}
 
 static void lstage_event_focused (evutil_socket_t fd, short events, void *arg) {
 	// Sanity check
@@ -210,8 +210,93 @@ static int add_timer(lua_State * L) {
    	return 0;
 }
 
+// Used to build polling table
+stageCell_t firstCell = NULL;
+
+// Build polling table
+static int lstage_build_polling_table (lua_State * L) {
+	// Free each previous created cell
+	if (firstCell != NULL) {
+
+	}
+
+	lua_settop(L, 1);
+	luaL_checktype(L, 1, LUA_TTABLE);
+
+	size_t  len = lua_objlen(L,1);
+	stage_t s   = NULL;
+	int     i   = 0;
+
+	// Get stages by index
+	for(i = 1; i <= len; i++) {
+		lua_rawgeti(L,1,i);
+	}
+
+        stageCell_t currentCell = NULL;
+        stageCell_t priorCell = NULL;
+
+	// Get stages and build polling table
+	for(i = len; i > 0; i--) {
+		// Convert into stage
+		s = lstage_tostage(L, (-1) * i);
+
+		currentCell = malloc(sizeof(struct lstage_StageCell));
+		currentCell->stage = s;
+		currentCell->nextCell = NULL;
+
+		// Fill prior stage
+		if (priorCell != NULL) {
+			priorCell->nextCell = currentCell;
+		}
+		priorCell = currentCell;
+
+		// Point to first cell var
+		if (firstCell == NULL) {
+			firstCell = currentCell;
+		}
+	}
+	return 1;
+}
+
+// Fire 'max_steps_reached' event when X steps passed in [scheduler.c]
+void lstage_fire_max_queue_steps () {
+	// Sanity check
+	if (L_main == NULL) {
+		return;
+	}
+
+	// Call "lost_focus" function
+	lua_getglobal(L_main, "max_steps_reached");
+
+	if(lua_type(L_main,-1)==LUA_TFUNCTION) {
+      		lua_call(L_main,0,0);
+   	} else {	
+		printf("Lost 'max_steps_reached' callback\n");
+      		lua_pop(L_main,1);
+	}
+}
+
+static int maxSteps = -1;
+// Max queue steps to change thread focus
+static int lstage_max_queue_steps (lua_State * L) {
+	maxSteps = lua_tointeger(L,1);
+	return 1;
+}
+
+// Get queue max steps. Used in [scheduler.c]
+int lstage_get_queue_steps () {
+	return maxSteps;
+}
+
+static int queueConfigurated = 0;
+
 // Make use of private or public 'ready queues'
 static int lstage_use_private_queues (lua_State * L) {
+	// Used can configure only once
+	if (queueConfigurated == 1)
+		return 0;
+	
+	queueConfigurated = 1;
 	int n = lua_tointeger(L,1);
 
 	switch(n) {
@@ -319,6 +404,8 @@ static const struct luaL_Reg LuaExportFunctions[] = {
 	{"add_timer", add_timer},
 	{"useprivatequeues", lstage_use_private_queues},
 	{"dispatchevents", dispatch_events},
+	{"buildpollingtable",lstage_build_polling_table},
+	{"maxsteps",lstage_max_queue_steps},
 	{NULL,NULL}
 	};
 

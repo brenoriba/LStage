@@ -95,7 +95,7 @@ wrapper.configure = function (stages, policy, threads, instanceControl)
 		wrapper.mg1 (mg1Stages, threads, instanceControl)
 
 	elseif (policy == "SEDA") then
-		threads = math.ceil(threads / #stages)
+		--threads = math.ceil(threads / #stages)
 		print("Creating "..threads.." thread(s) per stage")
 		wrapper.seda (stages, threads)
 
