@@ -217,7 +217,7 @@ stageCell_t firstCell = NULL;
 static int lstage_build_polling_table (lua_State * L) {
 	// Free each previous created cell
 	if (firstCell != NULL) {
-
+			
 	}
 
 	lua_settop(L, 1);

@@ -63,13 +63,13 @@ stage1:steal(stage2,1)
 stage1:steal(stage2,2)
 --]]
 
-local stages = {stage1,stage2,stage3,stage4}
+--local stages = {stage1,stage2,stage3,stage4}
 
 -- SRPT
 --local stages = {stage4,stage3,stage2,stage1}
 
 -- Cohort
---local stages = {stage1,stage2,stage3,stage4,stage3,stage2}
+local stages = {stage1,stage2,stage3,stage4,stage3,stage2}
 lstage.buildpollingtable(stages)
 
 -- [-1] global ready queue
@@ -84,8 +84,9 @@ max_steps_reached=function()
 	print("Fired!")
 end
 
---stage1:max_events_when_focused(-1)
-
+for i,stage in ipairs(stages) do
+	stage:max_events_when_focused(10)
+end
 
 --stage1:setpriority(10)
 --stage2:setpriority(21)

@@ -508,9 +508,6 @@ static int lstage_newstage(lua_State * L) {
    (*stage)->max_events = -1;
    (*stage)->processed_in_focus = 0;
 
-   (*stage)->next=NULL;
-   (*stage)->prior=NULL;
-
    // Events combined with instances - ready to be processed
    (*stage)->ready_queue=lstage_pqueue_new();
    (*stage)->id = stageCount++;

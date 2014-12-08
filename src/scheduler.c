@@ -202,8 +202,8 @@ static THREAD_RETURN_T THREAD_CALLCONV thread_mainloop(void *t_val) {
    thread_t   self	= (thread_t)t_val;
 
    int processedEvents = 0;
-   int maxSteps = 0;
-   int lastStageId = 0;
+   //int maxSteps = 0;
+   //int lastStageId = 0;
 
    // Queue type
    enum lstage_private_queue_flag queueFlag = lstage_get_ready_queue_type ();
@@ -211,7 +211,7 @@ static THREAD_RETURN_T THREAD_CALLCONV thread_mainloop(void *t_val) {
 
    while(1) {
    	_DEBUG("Thread %p wating for ready instaces\n",self);
-   	self->state=THREAD_IDLE;	
+   	self->state=THREAD_IDLE;
 
 	// [Workstealing] If we have to stole a thread
 	// *** Works only with pool per stage ***
@@ -249,6 +249,7 @@ static THREAD_RETURN_T THREAD_CALLCONV thread_mainloop(void *t_val) {
 	// Private queue with no turning back
 	// Private queue with turning back
 	else {
+		pthread_mutex_lock(&lock);
 		// We don't have our polling table yet
 		if (firstCell == NULL) {
 			continue;
@@ -261,35 +262,30 @@ static THREAD_RETURN_T THREAD_CALLCONV thread_mainloop(void *t_val) {
 		if (currentCell->stage->max_events > 0 && 
 		    currentCell->stage->processed_in_focus > currentCell->stage->max_events) 
 		{
-			pthread_mutex_lock(&lock);
 			currentCell->stage->processed_in_focus = 0;
-			
 			maxQueueSteps = maxQueueSteps + 1;
-			lastStageId = currentCell->stage->id;
+			//lastStageId = currentCell->stage->id;
 
 			// Update cursor
 			currentCell = currentCell->nextCell;
 			if (currentCell == NULL) {
 				currentCell = firstCell;
 			}
-			pthread_mutex_unlock(&lock);
 		}
 
 		// Check if we reached max queue steps - we must fire an event
-		if (processedEvents == 1 && lastStageId != currentCell->stage->id) {
-			maxSteps = lstage_get_queue_steps ();
+		//if (processedEvents == 1 && lastStageId != currentCell->stage->id) {
+			//maxSteps = lstage_get_queue_steps ();
 
-			pthread_mutex_lock(&lock);
-			if (maxSteps > 0 && maxQueueSteps > maxSteps) {
-printf("[maxQueueSteps] %d\n",maxQueueSteps);
+			//if (maxSteps > 0 && maxQueueSteps > maxSteps) {
+				//printf("[maxQueueSteps] %d\n",maxQueueSteps);
 				// Fire [max_steps_reached] event
-				maxQueueSteps = 0;
-				lstage_fire_max_queue_steps ();
-			}
-			pthread_mutex_unlock(&lock);
-		}
-
+				//maxQueueSteps = 0;
+				//lstage_fire_max_queue_steps ();
+			//}
+		//}
 		lstage_pqueue_pop(currentCell->stage->ready_queue,&i);
+		pthread_mutex_unlock(&lock);
 	}
 
 	// Instance found
@@ -318,29 +314,30 @@ printf("[maxQueueSteps] %d\n",maxQueueSteps);
 			case I_PRIVATE_QUEUE:
 				// No instance (get next stage)
 				pthread_mutex_lock(&lock);
-				currentCell->stage->processed_in_focus = 0;
 
+				currentCell->stage->processed_in_focus = 0;
 				maxQueueSteps = maxQueueSteps + 1;
-				lastStageId = currentCell->stage->id;
+				//lastStageId = currentCell->stage->id;
 				currentCell = currentCell->nextCell;
 				if (currentCell == NULL) {
 					currentCell = firstCell;
 				}
 
 				// Fire event because priority has changed
-				if (currentCell->stage->fire_priority == 1) {
+				//if (currentCell->stage->fire_priority == 1) {
 					//lstage_stage_was_focused();
-			        }
+			        //}
 				pthread_mutex_unlock(&lock);
+
 				break;
 			// Private queue with turning back
 			case I_RESTART_PRIVATE_QUEUE:
 				// One more step				
 				pthread_mutex_lock(&lock);
-				currentCell->stage->processed_in_focus = 0;
 
+				currentCell->stage->processed_in_focus = 0;
 				maxQueueSteps = maxQueueSteps + 1;
-				lastStageId = currentCell->stage->id;
+				//lastStageId = currentCell->stage->id;
 
 				// Get next stage (we get first if at least one event was processed)
 				if (processedEvents == 1) {

@@ -61,6 +61,12 @@ lua run.lua
 
 # Installing HTTP Server Project
 
+Install dependencies:
+
+```
+sudo apt-get install lua-socket-dev
+```
+
 Build project:
 
 ```

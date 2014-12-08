@@ -43,10 +43,6 @@ struct lstage_Stage {
    volatile int priority;
    stage_t parent;
 
-   // Used on polling table [scheduler.c]
-   stage_t prior;
-   stage_t next;
-
    int lock;
 };
 
