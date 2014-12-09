@@ -189,14 +189,12 @@ static void thread_resume_instance(instance_t i) {
 	}
 }
 
-// lstage.c [lstage_build_polling_table - linked list to use polling tables]
-extern stageCell_t firstCell;
-static stageCell_t currentCell = NULL;
-static int maxQueueSteps = 0;
-
 // Thread main loop - called when a new thread is created
 // pool.c - "pool_addthread"
 static THREAD_RETURN_T THREAD_CALLCONV thread_mainloop(void *t_val) {
+   // lstage.c [lstage_build_polling_table - linked list to use polling tables]
+   extern stageCell_t firstCell;
+
    instance_t i		= NULL;
    steal_t    stealFrom = NULL;
    thread_t   self	= (thread_t)t_val;
@@ -207,7 +205,8 @@ static THREAD_RETURN_T THREAD_CALLCONV thread_mainloop(void *t_val) {
 
    // Queue type
    enum lstage_private_queue_flag queueFlag = lstage_get_ready_queue_type ();
-   maxQueueSteps = 0;
+   int maxQueueSteps = 0;
+   stageCell_t currentCell = NULL;
 
    while(1) {
    	_DEBUG("Thread %p wating for ready instaces\n",self);
@@ -249,7 +248,6 @@ static THREAD_RETURN_T THREAD_CALLCONV thread_mainloop(void *t_val) {
 	// Private queue with no turning back
 	// Private queue with turning back
 	else {
-		pthread_mutex_lock(&lock);
 		// We don't have our polling table yet
 		if (firstCell == NULL) {
 			continue;
@@ -262,7 +260,10 @@ static THREAD_RETURN_T THREAD_CALLCONV thread_mainloop(void *t_val) {
 		if (currentCell->stage->max_events > 0 && 
 		    currentCell->stage->processed_in_focus > currentCell->stage->max_events) 
 		{
+			LOCK(currentCell->stage);
 			currentCell->stage->processed_in_focus = 0;
+			UNLOCK(currentCell->stage);
+
 			maxQueueSteps = maxQueueSteps + 1;
 			//lastStageId = currentCell->stage->id;
 
@@ -285,7 +286,6 @@ static THREAD_RETURN_T THREAD_CALLCONV thread_mainloop(void *t_val) {
 			//}
 		//}
 		lstage_pqueue_pop(currentCell->stage->ready_queue,&i);
-		pthread_mutex_unlock(&lock);
 	}
 
 	// Instance found
@@ -296,9 +296,9 @@ static THREAD_RETURN_T THREAD_CALLCONV thread_mainloop(void *t_val) {
 
 		// Update new event
 		if (queueFlag == I_PRIVATE_QUEUE || queueFlag == I_RESTART_PRIVATE_QUEUE) {
-			pthread_mutex_lock(&lock);
+ 			LOCK(currentCell->stage);
 			currentCell->stage->processed_in_focus++;
-			pthread_mutex_unlock(&lock);
+			UNLOCK(currentCell->stage);
 		}
 
       		thread_resume_instance(i);
@@ -313,29 +313,31 @@ static THREAD_RETURN_T THREAD_CALLCONV thread_mainloop(void *t_val) {
 			// Private queue with no turning back
 			case I_PRIVATE_QUEUE:
 				// No instance (get next stage)
-				pthread_mutex_lock(&lock);
-
-				currentCell->stage->processed_in_focus = 0;
-				maxQueueSteps = maxQueueSteps + 1;
-				//lastStageId = currentCell->stage->id;
 				currentCell = currentCell->nextCell;
 				if (currentCell == NULL) {
 					currentCell = firstCell;
 				}
 
+				LOCK(currentCell->stage);
+				currentCell->stage->processed_in_focus = 0;
+				UNLOCK(currentCell->stage);
+
+				maxQueueSteps = maxQueueSteps + 1;
+				//lastStageId = currentCell->stage->id;
+
 				// Fire event because priority has changed
 				//if (currentCell->stage->fire_priority == 1) {
 					//lstage_stage_was_focused();
 			        //}
-				pthread_mutex_unlock(&lock);
 
 				break;
 			// Private queue with turning back
 			case I_RESTART_PRIVATE_QUEUE:
 				// One more step				
-				pthread_mutex_lock(&lock);
-
+				LOCK(currentCell->stage);
 				currentCell->stage->processed_in_focus = 0;
+				UNLOCK(currentCell->stage);
+
 				maxQueueSteps = maxQueueSteps + 1;
 				//lastStageId = currentCell->stage->id;
 
@@ -351,11 +353,13 @@ static THREAD_RETURN_T THREAD_CALLCONV thread_mainloop(void *t_val) {
 					}
 				}
 
+				LOCK(currentCell->stage);
 				// Fire event because priority has changed
 				if (currentCell->stage->fire_priority == 1) {
 					//lstage_stage_was_focused();
-			        }			
-				pthread_mutex_unlock(&lock);
+			        }
+				UNLOCK(currentCell->stage);
+
 				break;
 		};
 		processedEvents = 0;

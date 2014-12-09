@@ -15,12 +15,13 @@ local util    = require "util"
 
 -- Global vars
 local stages    = {}
-local instances = 7
+local instances = 6
 
 -- Scripts directory
 local scriptDir = "scripts/"
 
 -- Close client connection
+--[[
 closeSocket=function(clientSocket, close)
 	local stage = require 'stages'
 
@@ -33,6 +34,7 @@ closeSocket=function(clientSocket, close)
 		assert(stage.handle:push(clientSocket),"Error while handling connection")
 	end
 end
+--]]
 
 -- Load cache file
 cacheLoadFile=function(clientSocket, reqData)
@@ -89,7 +91,8 @@ cacheLoadFile=function(clientSocket, reqData)
 
 	-- Close client socket
 	local closeConn = reqData.headers['connection']=="close"
-	stages.closeSocket:push(clientSocket, closeConn)
+	clientSocket:close()
+	--stages.closeSocket:push(clientSocket, closeConn)
 end
 
 -- Access cache buffer
@@ -111,12 +114,20 @@ cacheBuffer=function(clientSocket, reqData)
 
 	-- Close client connection	
 	local closeConn = reqData.headers['connection']=="close"
-	stages.closeSocket:push(clientSocket, closeConn)
+	clientSocket:close()
+	--stages.closeSocket:push(clientSocket, closeConn)
 end
 
 -- Cache handler
 cacheHandler=function(clientSocket, reqData)
 	c_cache=require 'cache'
+
+	-- Loop to take more time
+	local countdown = 0
+	for i=0,500000,1 do
+		countdown = countdown + 1
+	end
+	local final = countdown
 
 	-- Found in cache (access buffer)
 	if c_cache.has(reqData.relpath) then
@@ -169,7 +180,8 @@ runScript=function(clientSocket, reqData)
 
 	-- Close client socket
 	local closeConn = reqData.headers['connection']=="close"
-	stages.closeSocket:push(clientSocket, closeConn)
+	clientSocket:close()
+	--stages.closeSocket:push(clientSocket, closeConn)
 end
 
 -- Handle incoming connections
@@ -179,7 +191,8 @@ handle=function(clientSocket)
 
 	-- Error check
 	if not data then
-		stages.closeSocket:push(clientSocket, true)
+		clientSocket:close()
+		--stages.closeSocket:push(clientSocket, true)
 		return
 	end
 
@@ -227,7 +240,7 @@ start=function(port)
 end
 
 -- Add function into stages
-stages.closeSocket   = lstage.stage (closeSocket,   instances)
+--stages.closeSocket   = lstage.stage (closeSocket,   instances)
 stages.cacheLoadFile = lstage.stage (cacheLoadFile, instances)
 stages.cacheBuffer   = lstage.stage (cacheBuffer,   instances)
 stages.cacheHandler  = lstage.stage (cacheHandler,  1)

@@ -51,7 +51,7 @@ wrapper.cohort = function (stagesTable, threads)
 	lstage.buildpollingtable(stages)
 
 	for i,stage in ipairs(stages) do
-		stage:max_events_when_focused(3)
+		--stage:max_events_when_focused(3)
 	end
 
 	-- [-1] global ready queue
