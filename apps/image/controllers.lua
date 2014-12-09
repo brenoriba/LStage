@@ -8,11 +8,12 @@
 ]]--
 
 -- Controllers
-local lstage  = require 'lstage'
-local srpt    = require 'lstage.controllers.srpt'
-local mg1     = require 'lstage.controllers.mg1'
-local dynamic = require 'lstage.controllers.dynamic'
-local seda    = require 'lstage.controllers.seda'
+local lstage       = require 'lstage'
+local srpt         = require 'lstage.controllers.srpt'
+local mg1          = require 'lstage.controllers.mg1'
+local dynamic      = require 'lstage.controllers.dynamic'
+local seda         = require 'lstage.controllers.seda'
+local workstealing = require 'lstage.controllers.workstealing'
 
 -- Global vars
 local wrapper = {}
@@ -37,6 +38,45 @@ wrapper.srpt = function (stagesTable, threads, instanceControl)
 
 	-- stagesTable, numberOfThreads
 	srpt.configure(stages, threads, instanceControl)
+
+	local stages = {}
+	for ix=#stagesTable,1,-1 do
+		table.insert(stages,stagesTable[ix])
+	end
+
+	--lstage.buildpollingtable(stages)
+
+	-- [-1] global ready queue
+	-- [0] private ready queue
+	-- [1] private ready queue with turning back
+	--lstage.useprivatequeues(1)
+	--lstage.pool:add(threads)
+end
+
+-- Cohort configure method
+wrapper.cohort = function (stagesTable, threads)
+	local stages = stagesTable
+	
+	for i=#stagesTable-1,2,-1 do
+		table.insert(stages,stagesTable[i])
+	end
+
+	lstage.buildpollingtable(stages)
+
+	for i,stage in ipairs(stages) do
+		stage:max_events_when_focused(10)
+	end
+
+	-- [-1] global ready queue
+	-- [0] private ready queue
+	-- [1] private ready queue with turning back
+	lstage.useprivatequeues(0)
+	lstage.pool:add(threads)
+end
+
+-- Workstealing configure method
+wrapper.workstealing = function (stagesTable, threads)
+	workstealing.configure(stagesTable, threads, 3)
 end
 
 -- MG1 configure method
@@ -70,10 +110,22 @@ end
 -- Configure policy
 wrapper.configure = function (stages, policy, threads, instanceControl)
 	print("\n*********************************")
+	print("Configuring ["..policy.."] policy")
 
 	if (policy == "SRPT") then
 		print("Creating "..threads.." thread(s)")
+		print("*********************************\n")
 		wrapper.srpt (stages, threads, instanceControl)
+
+	elseif (policy == "COHORT") then
+		print("Creating "..threads.." thread(s)")
+		print("*********************************\n")
+		wrapper.cohort (stages, threads)
+
+	elseif (policy == "WORKSTEALING") then
+		print("Creating "..threads.." thread(s)")
+		print("*********************************\n")
+		wrapper.workstealing (stages, threads)
 
 	elseif (policy == "MG1") then
 		-- Prepare MG1 table
@@ -84,27 +136,28 @@ wrapper.configure = function (stages, policy, threads, instanceControl)
 		end
 
 		print("Creating "..threads.." thread(s)")
+		print("*********************************\n")
 		wrapper.mg1 (mg1Stages, threads, instanceControl)
 
 	elseif (policy == "SEDA") then
 		--threads = math.ceil(threads / #stages)
 		print("Creating "..threads.." thread(s) per stage")
+		print("*********************************\n")
 		wrapper.seda (stages, threads)
 
 	elseif (policy == "DYNAMIC") then
 		print("Creating "..threads.." thread(s)")
+		print("*********************************\n")
 		wrapper.dynamic (stages, threads, maxThreads, queueThreshold, idlePercentage)
 
 	elseif (policy == "COLOR") then
 		-- Do nothing - color policy is the lstage default policy
 		print("Creating "..threads.." thread(s)")
+		print("*********************************\n")
 	
 		-- Creating threads
 		lstage.pool:add(threads)
 	end
-
-	print("Configuring ["..policy.."] policy")
-	print("*********************************\n")
 end
 
 return wrapper

@@ -14,15 +14,16 @@ local stage 	  = require 'stage' 	  -- Project stages
 
 -- Available controllers
 -- {SRPT,MG1,SEDA,DYNAMIC,COLOR}
-local policy 	      = "SEDA"
+local policy 	      = "WORKSTEALING"
 local instanceControl = false
 
 -- Input directory 
 -- Change this if you want to get images from another folder
-local inputDir  = "in/images/in/in_big_120"
+local inputDir  = "in/images/in/in_big"
+--local inputDir  = "in"
 
 -- Number of threads (per stage in case of SEDA)
-local threads = 30
+local threads = 2
 
 -- Stages table
 local stages = {}
@@ -36,8 +37,8 @@ stages[6] = stage.invert
 stages[7] = stage.save
 
 -- Get all images path and push into first stage's queue
-local file = files.getImages(inputDir)
-assert(stage.load:push(inputDir, file),"[stage_load] Error while loading images")
+local files = files.getImages(inputDir)
+assert(stage.load:push(inputDir, files),"[stage_load] Error while loading images")
 
 -- Configure policy
 controllers.configure(stages,policy,threads,instanceControl)
@@ -56,6 +57,12 @@ on_timer=function(id)
 		local dynamic = require 'lstage.controllers.dynamic'
 		dynamic.on_timer(id)
 	end
+
+	-- Workstealing
+	--if (policy == "WORKSTEALING") then
+		--local workstealing = require 'lstage.controllers.workstealing'
+		--workstealing.on_timer(id)
+	--end
 end
 
 --[[

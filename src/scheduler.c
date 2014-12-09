@@ -213,6 +213,8 @@ static THREAD_RETURN_T THREAD_CALLCONV thread_mainloop(void *t_val) {
    	_DEBUG("Thread %p wating for ready instaces\n",self);
    	self->state=THREAD_IDLE;
 
+	i=NULL;
+
 	// [Workstealing] If we have to stole a thread
 	// *** Works only with pool per stage ***
 	stealFrom = NULL;
@@ -240,8 +242,6 @@ static THREAD_RETURN_T THREAD_CALLCONV thread_mainloop(void *t_val) {
 
 		UNLOCK(self->pool);
         }
-
-	i=NULL;
 
 	// Get ready instance
 	if (queueFlag == I_GLOBAL_QUEUE)

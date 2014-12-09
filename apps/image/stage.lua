@@ -17,7 +17,7 @@ local debug 	= false
 
 -- How many instances each stage will have
 -- (we use the same as the number of threads)
-local instances = 30
+local instances = 2
 
 -- How many images will be thrown in grayscale stage
 local blockSize = 500

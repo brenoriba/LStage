@@ -21,10 +21,10 @@ local defaultPort = 8080
 
 -- Available controllers
 -- {SRPT,MG1,SEDA,DYNAMIC,COLOR}
-local policy  = "SEDA"
+local policy  = "COHORT"
 
 -- Number of threads (per stage in case of SEDA)
-local threads = 30
+local threads = 7
 
 -- Stages table
 local stages = {}
@@ -36,9 +36,6 @@ stages[4] = stage.cacheHandler
 stages[5] = stage.cacheBuffer
 stages[6] = stage.cacheLoadFile
 stages[7] = stage.closeSocket
-
--- Configure policy
-controllers.configure(stages,policy,threads,false)
 
 -- Timer event
 on_timer=function(id)
@@ -54,16 +51,13 @@ on_timer=function(id)
 		local dynamic = require 'lstage.controllers.dynamic'
 		dynamic.on_timer(id)
 	end
-
-	-- Workstealing
-	if (policy == "WORKSTEALING") then
-		local workstealing = require 'lstage.controllers.workstealing'
-		workstealing.on_timer(id)
-	end
 end
 
 -- Push event to start server
 stage.start:push(defaultPort)
+
+-- Configure policy
+controllers.configure(stages,policy,threads,false)
 
 -- Dispatch on_timer events
 lstage.dispatchevents()

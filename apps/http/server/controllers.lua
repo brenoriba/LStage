@@ -40,6 +40,27 @@ wrapper.srpt = function (stagesTable, threads, instanceControl)
 	srpt.configure(stages, threads, instanceControl)
 end
 
+-- Cohort configure method
+wrapper.cohort = function (stagesTable, threads)
+	local stages = stagesTable
+	
+	for i=#stagesTable-1,2,-1 do
+		table.insert(stages,stagesTable[i])
+	end
+
+	lstage.buildpollingtable(stages)
+
+	for i,stage in ipairs(stages) do
+		stage:max_events_when_focused(3)
+	end
+
+	-- [-1] global ready queue
+	-- [0] private ready queue
+	-- [1] private ready queue with turning back
+	lstage.useprivatequeues(0)
+	lstage.pool:add(threads)
+end
+
 -- MG1 configure method
 wrapper.mg1 = function (stagesTable, threads, instanceControl)
 	-- stagesTable, numberOfThreads, refreshSeconds
@@ -53,9 +74,8 @@ wrapper.seda = function (stagesTable, threads)
 end
 
 -- Workstealing configure method
-wrapper.workstealing = function (stagesTable, threads, queueThreshold)
-	-- stagesTable, threadsPerPool
-	workstealing.configure(stagesTable, threads, refresh, queueThreshold)
+wrapper.workstealing = function (stagesTable, threads)
+	workstealing.configure(stagesTable, threads, 4)
 end
 
 -- DYNAMIC configure method
@@ -82,6 +102,10 @@ wrapper.configure = function (stages, policy, threads, instanceControl)
 	if (policy == "SRPT") then
 		print("Creating "..threads.." thread(s)")
 		wrapper.srpt (stages, threads, instanceControl)
+
+	elseif (policy == "COHORT") then
+		print("Creating "..threads.." thread(s)")
+		wrapper.cohort (stages, threads)
 
 	elseif (policy == "MG1") then
 		-- Prepare MG1 table
@@ -111,7 +135,10 @@ wrapper.configure = function (stages, policy, threads, instanceControl)
 		lstage.pool:add(threads)
 	elseif (policy == "WORKSTEALING") then
 		print("Creating "..threads.." thread(s)")
-		wrapper.workstealing (stages, threads, queueThreshold)
+		print("Configuring ["..policy.."] policy")
+		print("*********************************\n")
+
+		wrapper.workstealing (stages, threads)
 	end
 
 	print("Configuring ["..policy.."] policy")
