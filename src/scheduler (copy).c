@@ -14,6 +14,9 @@
 #define LOCK(q) while (__sync_lock_test_and_set(&(q)->lock,1)) {}
 #define UNLOCK(q) __sync_lock_release(&(q)->lock);
 
+// Used in thread_main_loop to count processed events in private ready queue
+static pthread_mutex_t lock;
+
 static int thread_tostring (lua_State *L) {
   thread_t * t = luaL_checkudata (L, 1, LSTAGE_THREAD_METATABLE);
   lua_pushfstring (L, "Thread (%p)", *t);
@@ -186,44 +189,24 @@ static void thread_resume_instance(instance_t i) {
 	}
 }
 
-// lstage.c [lstage_build_polling_table - linked list to use polling tables]
-extern stageCell_t firstCell;
-static stageCell_t currentCell        = NULL;
-static int    	   visits             = 0;
-static int         firstVisitOccurred = 0;
-
-// Used to change stages in private queues configuration
-static pthread_mutex_t lock;
-
-// Wait for polling table - used in private queues
-static void waitForVisitOrder () {
-	if (currentCell != NULL) {
-		return;
-	}
-
-	while (1) {
-		// We don't have our polling table yet
-		if (firstCell != NULL) {
-			currentCell = firstCell;
-			break;
-		}
-	}
-}
-
 // Thread main loop - called when a new thread is created
 // pool.c - "pool_addthread"
 static THREAD_RETURN_T THREAD_CALLCONV thread_mainloop(void *t_val) {
+   // lstage.c [lstage_build_polling_table - linked list to use polling tables]
+   extern stageCell_t firstCell;
+
    instance_t i		= NULL;
    steal_t    stealFrom = NULL;
    thread_t   self	= (thread_t)t_val;
-   int 	      maxVisits = 0;
+
+   int processedEvents = 0;
+   //int maxSteps = 0;
+   //int lastStageId = 0;
 
    // Queue type
    enum lstage_private_queue_flag queueFlag = lstage_get_ready_queue_type ();
-
-   if (queueFlag != I_GLOBAL_QUEUE) {
-   	waitForVisitOrder ();
-   }
+   int maxQueueSteps = 0;
+   stageCell_t currentCell = NULL;
 
    while(1) {
    	_DEBUG("Thread %p wating for ready instaces\n",self);
@@ -260,55 +243,95 @@ static THREAD_RETURN_T THREAD_CALLCONV thread_mainloop(void *t_val) {
         }
 
 	// Get ready instance
-	if (queueFlag == I_GLOBAL_QUEUE) {
+	if (queueFlag == I_GLOBAL_QUEUE)
 		lstage_pqueue_pop(self->pool->ready,&i);
-
-		// Event will be processed
-		if(i!=NULL) {
-	     		_DEBUG("Thread %p got a ready instance %p\n",self,i);
-		     	self->state=THREAD_RUNNING;
-	      		thread_resume_instance(i);
-		// Thread will sleep
-		} else {
-			lstage_pqueue_lock_and_wait(self->pool->ready);
-		}
-	}
+	// Private queue with no turning back
+	// Private queue with turning back
 	else {
-		pthread_mutex_lock(&lock);
+		// We don't have our polling table yet
+		if (firstCell == NULL) {
+			continue;
+		}
+		else if (currentCell== NULL) {
+			currentCell = firstCell;
+		}
+
 		// Time to change stage (we already processed max number of events)
 		if (currentCell->stage->max_events > 0 && 
-		    currentCell->stage->processed_in_focus > currentCell->stage->max_events) 
-		{
+		    processedEvents > currentCell->stage->max_events) 
+		{						
+			processedEvents = 0;
+			maxQueueSteps = maxQueueSteps + 1;
+			//lastStageId = currentCell->stage->id;
+
 			// Update cursor
 			currentCell = currentCell->nextCell;
 			if (currentCell == NULL) {
 				currentCell = firstCell;
 			}
-			currentCell->stage->processed_in_focus = 0;
-			visits++;
 		}
 
-		// Get new instance
+		// Check if we reached max queue steps - we must fire an event
+		//if (processedEvents == 1 && lastStageId != currentCell->stage->id) {
+			//maxSteps = lstage_get_queue_steps ();
+
+			//if (maxSteps > 0 && maxQueueSteps > maxSteps) {
+				//printf("[maxQueueSteps] %d\n",maxQueueSteps);
+				// Fire [max_steps_reached] event
+				//maxQueueSteps = 0;
+				//lstage_fire_max_queue_steps ();
+			//}
+		//}
 		lstage_pqueue_pop(currentCell->stage->ready_queue,&i);
- 
-		if (i==NULL) {			
+	}
+
+	// Instance found
+        if(i!=NULL) {
+	     	_DEBUG("Thread %p got a ready instance %p\n",self,i);
+	     	self->state=THREAD_RUNNING;
+		processedEvents = 1;
+
+		// Update new event
+		if (queueFlag == I_PRIVATE_QUEUE || queueFlag == I_RESTART_PRIVATE_QUEUE) {
+			processedEvents++;
+		}
+
+      		thread_resume_instance(i);
+
+	// No instance (wait for the next instance)
+	} else {
+		switch(queueFlag) {
+			// Public queue
+			case I_GLOBAL_QUEUE:
+				lstage_pqueue_lock_and_wait(self->pool->ready);	
+				break;
 			// Private queue with no turning back
-			if (queueFlag == I_PRIVATE_QUEUE) {
+			case I_PRIVATE_QUEUE:
 				// No instance (get next stage)
 				currentCell = currentCell->nextCell;
 				if (currentCell == NULL) {
 					currentCell = firstCell;
 				}
 
+				processedEvents = 0;
+				maxQueueSteps   = maxQueueSteps + 1;
+				//lastStageId = currentCell->stage->id;
+
 				// Fire event because priority has changed
-				if (currentCell->stage->fire_priority == 1) {
+				//if (currentCell->stage->fire_priority == 1) {
 					//lstage_stage_was_focused();
-			        }
+			        //}
+
+				break;
 			// Private queue with turning back
-			} else {
+			case I_RESTART_PRIVATE_QUEUE:
+				// One more step				
+				maxQueueSteps = maxQueueSteps + 1;
+				//lastStageId = currentCell->stage->id;
+
 				// Get next stage (we get first if at least one event was processed)
-				if (currentCell->stage->processed_in_focus > 0) {
-					currentCell = firstCell;
+				if (processedEvents > 0) {
+					currentCell     = firstCell;
 				// No event was processed - get next
 				} else {
 					currentCell = currentCell->nextCell;
@@ -316,40 +339,17 @@ static THREAD_RETURN_T THREAD_CALLCONV thread_mainloop(void *t_val) {
 						currentCell = firstCell;
 					}
 				}
+				processedEvents = 0;
 
+				//LOCK(currentCell->stage);
 				// Fire event because priority has changed
-				if (currentCell->stage->fire_priority == 1) {
+				//if (currentCell->stage->fire_priority == 1) {
 					//lstage_stage_was_focused();
-			        }
-			}
+			        //}
+				//UNLOCK(currentCell->stage);
 
-			visits++;
-			currentCell->stage->processed_in_focus = 0;
-
-		} if (i!=NULL) {
-			currentCell->stage->processed_in_focus++;
-			currentCell->stage->processed++;
-		}
-
-		// Fire [max_steps_reached] event
-		maxVisits = lstage_get_queue_steps ();
-		if (firstVisitOccurred == 1 && visits > 0 && visits > maxVisits) {
-			visits = 0;
-			lstage_fire_max_queue_steps ();
-		}
-		pthread_mutex_unlock(&lock);
-
-		// Process event
-		if (i!=NULL) {			
-			_DEBUG("Thread %p got a ready instance %p\n",self,i);
-	     		self->state=THREAD_RUNNING;
-      			thread_resume_instance(i);
-			
-			// If at least one event was processed
-			if (firstVisitOccurred == 0)
-				visits = 0;
-			firstVisitOccurred = 1;
-		}
+				break;
+		};
 	}
    }
 

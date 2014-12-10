@@ -213,13 +213,25 @@ static int add_timer(lua_State * L) {
 // Used to build polling table
 stageCell_t firstCell = NULL;
 
+// Free last polling table
+static void freePollingTable (stageCell_t mainCell) {
+	// Sanity check
+	if (mainCell == NULL)
+		return;
+
+	stageCell_t nextCell = NULL;
+	// Free each previous created cell
+	while (mainCell != NULL) {
+		nextCell = mainCell->nextCell;
+		free(mainCell);
+		mainCell = nextCell;
+	}
+	nextCell = NULL;
+	mainCell = NULL;
+}
+
 // Build polling table
 static int lstage_build_polling_table (lua_State * L) {
-	// Free each previous created cell
-	if (firstCell != NULL) {
-			
-	}
-
 	lua_settop(L, 1);
 	luaL_checktype(L, 1, LUA_TTABLE);
 
@@ -233,7 +245,8 @@ static int lstage_build_polling_table (lua_State * L) {
 	}
 
         stageCell_t currentCell = NULL;
-        stageCell_t priorCell = NULL;
+        stageCell_t priorCell   = NULL;
+	stageCell_t mainCell    = NULL;
 
 	// Get stages and build polling table
 	for(i = len; i > 0; i--) {
@@ -250,11 +263,15 @@ static int lstage_build_polling_table (lua_State * L) {
 		}
 		priorCell = currentCell;
 
-		// Point to first cell var
-		if (firstCell == NULL) {
-			firstCell = currentCell;
+		if (mainCell == NULL) {
+			mainCell = currentCell;
 		}
 	}
+
+	// Free last table
+	//stageCell_t freedCells = firstCell;
+	firstCell = mainCell;
+	//freePollingTable (freedCells);
 	return 1;
 }
 

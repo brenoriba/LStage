@@ -32,6 +32,7 @@ struct lstage_Stage {
    Pqueue_t ready_queue;   // Events combined with instances
    pool_t pool; 	   // Stage pool
    int init_time; 	   // Stage creation time to measure throughput (processed_count / now - init_time)
+   int inputCount;	   // Input events
    int processed; 	   // Number of events processed
    int enabled; 	   // If the stage is enabled or disabled to receive new queries
    int fire_priority;	   // Fire event new priority changes

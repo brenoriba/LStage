@@ -99,6 +99,11 @@ static int stage_wrap(lua_State * L) {
 static int stage_push(lua_State *L) {
    stage_t s=lstage_tostage(L,1);
 
+   // Increment input count
+   LOCK(s);
+   s->inputCount++;
+   UNLOCK(s);
+
    // Check if the stage is enabled to receive new events
    int enabled = s->enabled;
    if (enabled == 0) {
@@ -411,6 +416,10 @@ static const struct luaL_Reg StageMetaFunctions[] = {
 		{"max_events_when_focused",stage_max_events_when_focused},
 		{"firewhenfocused",stage_fire_when_focused},
 		{"donotfirewhenfocused",stage_do_not_fire_when_focused},
+
+		//{"getArrivalRate",stage_arrival_rate},
+		//{"getServiceRate",stage_service_rate},
+
 		{NULL,NULL}
 };
 

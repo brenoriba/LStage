@@ -15,7 +15,7 @@ local util    = require "util"
 
 -- Global vars
 local stages    = {}
-local instances = 6
+local instances = 4
 
 -- Scripts directory
 local scriptDir = "scripts/"
@@ -38,6 +38,12 @@ end
 
 -- Load cache file
 cacheLoadFile=function(clientSocket, reqData)
+	local countdown = 0
+	for i=0,20000000,1 do
+		countdown = countdown + 1
+	end
+	local final = countdown
+
 	-- Imports		
 	require 'table'
 	require 'io'
@@ -124,7 +130,7 @@ cacheHandler=function(clientSocket, reqData)
 
 	-- Loop to take more time
 	local countdown = 0
-	for i=0,500000,1 do
+	for i=0,50000000,1 do
 		countdown = countdown + 1
 	end
 	local final = countdown

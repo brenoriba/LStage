@@ -75,17 +75,19 @@ lstage.buildpollingtable(stages)
 -- [-1] global ready queue
 -- [0] private ready queue
 -- [1] private ready queue with turning back
-lstage.useprivatequeues(0)
+lstage.useprivatequeues(1)
 lstage.pool:add(4)
---lstage.maxsteps(4)
+lstage.maxsteps(4)
 
 -- Fire [maxsteps]
 max_steps_reached=function()
 	print("Fired!")
+	stages = {stage4,stage3,stage2,stage1}
+	lstage.buildpollingtable(stages)
 end
 
 for i,stage in ipairs(stages) do
-	stage:max_events_when_focused(10)
+	stage:max_events_when_focused(5)
 end
 
 --stage1:setpriority(10)

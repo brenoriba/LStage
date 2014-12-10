@@ -21,10 +21,10 @@ local defaultPort = 8080
 
 -- Available controllers
 -- {SRPT,MG1,SEDA,DYNAMIC,COLOR}
-local policy  = "COHORT"
+local policy  = "WORKSTEALING"
 
 -- Number of threads (per stage in case of SEDA)
-local threads = 6
+local threads = 2
 
 -- Stages table
 local stages = {}
