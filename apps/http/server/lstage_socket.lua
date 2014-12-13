@@ -22,7 +22,7 @@ if tcp_client_mt then
          local container_sock=assert(socket.tcp())
          container_sock:close()
          container_sock:setfd(sockfd)
-         return lstage.setmetatable(container_sock,client_mt)     
+         return lstage.setmetatable(container_sock,client_mt)
       end
    end
 

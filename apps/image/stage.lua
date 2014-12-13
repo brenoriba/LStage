@@ -17,10 +17,10 @@ local debug 	= false
 
 -- How many instances each stage will have
 -- (we use the same as the number of threads)
-local instances = 2
+local instances = 8
 
 -- How many images will be thrown in grayscale stage
-local blockSize = 500
+local blockSize = 2
 
 -- Save images
 stage.save={}
@@ -209,9 +209,7 @@ stage.load=lstage.stage(
 
 		-- To insert random sleep in each block
 		local randomSleep = {}
-		randomSleep[1] = 1
-		randomSleep[2] = 3
-		randomSleep[3] = 2
+		randomSleep[1] = 5
 
 		-- Push all images into grayscale stage
 		local msg = "[stage_grayscale] Error while applying grayscale into "

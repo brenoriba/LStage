@@ -151,9 +151,9 @@ static void thread_resume_instance(instance_t i) {
 				i->args=n;
 				
 				// Increment processed count - used to build statistics
-				LOCK(i->stage);
-				i->stage->processed++;
-				UNLOCK(i->stage);
+				//LOCK(i->stage);
+				//i->stage->processed++;
+				//UNLOCK(i->stage);
 
 			} else {
 				lua_pushliteral(L,STAGE_HANDLER_KEY);
@@ -188,41 +188,24 @@ static void thread_resume_instance(instance_t i) {
 
 // lstage.c [lstage_build_polling_table - linked list to use polling tables]
 extern stageCell_t firstCell;
-static stageCell_t currentCell        = NULL;
-static int    	   visits             = 0;
-static int         firstVisitOccurred = 0;
-
-// Used to change stages in private queues configuration
-static pthread_mutex_t lock;
-
-// Wait for polling table - used in private queues
-static void waitForVisitOrder () {
-	if (currentCell != NULL) {
-		return;
-	}
-
-	while (1) {
-		// We don't have our polling table yet
-		if (firstCell != NULL) {
-			currentCell = firstCell;
-			break;
-		}
-	}
-}
 
 // Thread main loop - called when a new thread is created
 // pool.c - "pool_addthread"
 static THREAD_RETURN_T THREAD_CALLCONV thread_mainloop(void *t_val) {
-   instance_t i		= NULL;
-   steal_t    stealFrom = NULL;
-   thread_t   self	= (thread_t)t_val;
-   int 	      maxVisits = 0;
+   // Var declarations
+   thread_t   self	       = (thread_t)t_val;
+   stageCell_t currentCell     = NULL;
+   instance_t i		       = NULL;
+   steal_t    stealFrom        = NULL;
+   int        processedInFocus = 0;
 
    // Queue type
    enum lstage_private_queue_flag queueFlag = lstage_get_ready_queue_type ();
 
+   // Wait for polling table
    if (queueFlag != I_GLOBAL_QUEUE) {
-   	waitForVisitOrder ();
+   	while (firstCell == NULL) { }
+	currentCell = firstCell;
    }
 
    while(1) {
@@ -274,24 +257,22 @@ static THREAD_RETURN_T THREAD_CALLCONV thread_mainloop(void *t_val) {
 		}
 	}
 	else {
-		pthread_mutex_lock(&lock);
 		// Time to change stage (we already processed max number of events)
-		if (currentCell->stage->max_events > 0 && 
-		    currentCell->stage->processed_in_focus > currentCell->stage->max_events) 
+		if (currentCell->stage->max_events > 0 &&
+		    processedInFocus > currentCell->stage->max_events)
 		{
 			// Update cursor
 			currentCell = currentCell->nextCell;
 			if (currentCell == NULL) {
 				currentCell = firstCell;
 			}
-			currentCell->stage->processed_in_focus = 0;
-			visits++;
+			processedInFocus = 0;
 		}
 
 		// Get new instance
 		lstage_pqueue_pop(currentCell->stage->ready_queue,&i);
- 
-		if (i==NULL) {			
+
+		if (i==NULL) {
 			// Private queue with no turning back
 			if (queueFlag == I_PRIVATE_QUEUE) {
 				// No instance (get next stage)
@@ -299,15 +280,10 @@ static THREAD_RETURN_T THREAD_CALLCONV thread_mainloop(void *t_val) {
 				if (currentCell == NULL) {
 					currentCell = firstCell;
 				}
-
-				// Fire event because priority has changed
-				if (currentCell->stage->fire_priority == 1) {
-					//lstage_stage_was_focused();
-			        }
 			// Private queue with turning back
 			} else {
 				// Get next stage (we get first if at least one event was processed)
-				if (currentCell->stage->processed_in_focus > 0) {
+				if (processedInFocus > 0) {
 					currentCell = firstCell;
 				// No event was processed - get next
 				} else {
@@ -316,39 +292,30 @@ static THREAD_RETURN_T THREAD_CALLCONV thread_mainloop(void *t_val) {
 						currentCell = firstCell;
 					}
 				}
-
-				// Fire event because priority has changed
-				if (currentCell->stage->fire_priority == 1) {
-					//lstage_stage_was_focused();
-			        }
 			}
 
-			visits++;
-			currentCell->stage->processed_in_focus = 0;
-
-		} if (i!=NULL) {
-			currentCell->stage->processed_in_focus++;
-			currentCell->stage->processed++;
+			// Fire event because priority has changed
+			if (currentCell->stage->fire_priority == 1) {
+				//lstage_stage_was_focused();
+		        }
+			processedInFocus = 0;
 		}
 
 		// Fire [max_steps_reached] event
-		maxVisits = lstage_get_queue_steps ();
-		if (firstVisitOccurred == 1 && visits > 0 && visits > maxVisits) {
-			visits = 0;
-			lstage_fire_max_queue_steps ();
-		}
-		pthread_mutex_unlock(&lock);
+		//maxVisits = lstage_get_queue_steps ();
+		//if (firstVisitOccurred == 1 && maxVisits > 0 && visits > 0 && visits > maxVisits) {
+		//	visits = 0;
+		//	lstage_fire_max_queue_steps ();
+		//}
 
 		// Process event
-		if (i!=NULL) {			
+		if (i!=NULL) {
 			_DEBUG("Thread %p got a ready instance %p\n",self,i);
 	     		self->state=THREAD_RUNNING;
       			thread_resume_instance(i);
 			
 			// If at least one event was processed
-			if (firstVisitOccurred == 0)
-				visits = 0;
-			firstVisitOccurred = 1;
+			processedInFocus++;
 		}
 	}
    }

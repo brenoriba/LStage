@@ -91,3 +91,30 @@ Or you can test directly from your browser using one of the URL's bellow:
 To run a script inside the server      : http://127.0.0.01:8080/index.lua
 To read a static page inside the server: http://127.0.0.01:8080/index.html
 ```
+
+Or you can use httperf to run a bunch of queries:
+
+Installing:
+
+```
+https://rtcamp.com/tutorials/benchmark/httperf/
+```
+
+Follow this steps:
+
+```
+unzip master.zip (inside apps/http/)
+cd httperf-master
+autoreconf -i
+mkdir build
+cd build
+../configure
+make 
+make install
+```
+
+Testing:
+
+```
+httperf --client=0/1 --server=127.0.0.1 --port=8080 --uri=/index.html --send-buffer=4096 --recv-buffer=16384 --num-conns=1000 --num-calls=1
+```

@@ -37,20 +37,20 @@ wrapper.srpt = function (stagesTable, threads, instanceControl)
 	end
 
 	-- stagesTable, numberOfThreads
-	--srpt.configure(stages, threads, instanceControl)
+	srpt.configure(stages, threads, instanceControl)
 
 	local stages = {}
 	for ix=#stagesTable,1,-1 do
 		table.insert(stages,stagesTable[ix])
 	end
 
-	lstage.buildpollingtable(stages)
+	--lstage.buildpollingtable(stages)
 
 	-- [-1] global ready queue
 	-- [0] private ready queue
 	-- [1] private ready queue with turning back
-	lstage.useprivatequeues(1)
-	lstage.pool:add(threads)
+	--lstage.useprivatequeues(1)
+	--lstage.pool:add(threads)
 end
 
 -- Cohort configure method
@@ -64,7 +64,7 @@ wrapper.cohort = function (stagesTable, threads)
 	lstage.buildpollingtable(stages)
 
 	for i,stage in ipairs(stages) do
-		stage:max_events_when_focused(3)
+		--stage:max_events_when_focused(4)
 	end
 
 	-- [-1] global ready queue

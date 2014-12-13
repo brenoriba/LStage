@@ -6,7 +6,12 @@
 
 	Use httperf to test connections
 
-	httperf --client=0/1 --server=127.0.0.1 --port=8080 --uri=/index.html --send-buffer=4096 --recv-buffer=16384 --num-conns=1000 --num-calls=1
+        ==============================================
+	4 connections per second (one minute window)
+        50 * 60 = 300
+        ==============================================
+
+	httperf --client=0/1 --server=127.0.0.1 --port=8080 --uri=/index.html --send-buffer=4096 --recv-buffer=16384 --num-conns=5000 --num-calls=1 --rate=30
 
 	**********************************************************************************************
 ]]--
@@ -21,20 +26,20 @@ local defaultPort = 8080
 
 -- Available controllers
 -- {SRPT,MG1,SEDA,DYNAMIC,COLOR}
-local policy  = "WORKSTEALING"
+local policy  = "SEDA"
 
 -- Number of threads (per stage in case of SEDA)
-local threads = 2
+local threads = 1
 
 -- Stages table
 local stages = {}
 
 stages[1] = stage.start
 stages[2] = stage.handle
-stages[3] = stage.runScript
-stages[4] = stage.cacheHandler
-stages[5] = stage.cacheBuffer
-stages[6] = stage.cacheLoadFile
+--stages[3] = stage.runScript
+stages[3] = stage.cacheHandler
+stages[4] = stage.cacheBuffer
+stages[5] = stage.cacheLoadFile
 --stages[7] = stage.closeSocket
 
 -- Timer event

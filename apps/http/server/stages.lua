@@ -15,7 +15,7 @@ local util    = require "util"
 
 -- Global vars
 local stages    = {}
-local instances = 4
+local instances = 1
 
 -- Scripts directory
 local scriptDir = "scripts/"
@@ -39,7 +39,7 @@ end
 -- Load cache file
 cacheLoadFile=function(clientSocket, reqData)
 	local countdown = 0
-	for i=0,20000000,1 do
+	for i=0,2000000,1 do
 		countdown = countdown + 1
 	end
 	local final = countdown
@@ -106,6 +106,12 @@ cacheBuffer=function(clientSocket, reqData)
 	require 'table'
 	cache=require 'cache'
 
+	local countdown = 0
+	for i=0,100000000,1 do
+		countdown = countdown + 1
+	end
+	local final = countdown
+
 	local content   = cache.get(reqData.relpath)
 	local res       = {headers = util.response_headers()}
  	res.status_code = 200
@@ -118,7 +124,7 @@ cacheBuffer=function(clientSocket, reqData)
 	clientSocket:send(util.stdresp(res))
 	clientSocket:send(content)
 
-	-- Close client connection	
+	-- Close client connection
 	local closeConn = reqData.headers['connection']=="close"
 	clientSocket:close()
 	--stages.closeSocket:push(clientSocket, closeConn)
@@ -130,7 +136,7 @@ cacheHandler=function(clientSocket, reqData)
 
 	-- Loop to take more time
 	local countdown = 0
-	for i=0,50000000,1 do
+	for i=0,2000000,1 do
 		countdown = countdown + 1
 	end
 	local final = countdown
@@ -145,6 +151,7 @@ cacheHandler=function(clientSocket, reqData)
 end
 
 -- Run Lua script
+--[[
 runScript=function(clientSocket, reqData)
 	-- Imports
 	require 'os'
@@ -189,6 +196,7 @@ runScript=function(clientSocket, reqData)
 	clientSocket:close()
 	--stages.closeSocket:push(clientSocket, closeConn)
 end
+--]]
 
 -- Handle incoming connections
 handle=function(clientSocket)
@@ -249,8 +257,8 @@ end
 --stages.closeSocket   = lstage.stage (closeSocket,   instances)
 stages.cacheLoadFile = lstage.stage (cacheLoadFile, instances)
 stages.cacheBuffer   = lstage.stage (cacheBuffer,   instances)
-stages.cacheHandler  = lstage.stage (cacheHandler,  1)
-stages.runScript     = lstage.stage (runScript,     instances)
+stages.cacheHandler  = lstage.stage (cacheHandler,  instances)
+--stages.runScript     = lstage.stage (runScript,     instances)
 stages.handle	     = lstage.stage (handle, 	    instances)
 stages.start	     = lstage.stage (start, 	    1)
 
