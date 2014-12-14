@@ -15,36 +15,39 @@ local util    = require "util"
 
 -- Global vars
 local stages    = {}
-local instances = 1
+local instances = 2
 
 -- Scripts directory
 local scriptDir = "scripts/"
 
--- Close client connection
---[[
-closeSocket=function(clientSocket, close)
-	local stage = require 'stages'
-
-	-- Close connection
-	if (close) then		
-		clientSocket:close()
-	-- Send connection again to handle stage
-	-- The user will continue making requests
-	else
-		assert(stage.handle:push(clientSocket),"Error while handling connection")
-	end
-end
---]]
-
--- Load cache file
-cacheLoadFile=function(clientSocket, reqData)
+-- Send answer
+cacheSendFile=function(clientSocket, res, html)
 	local countdown = 0
 	for i=0,2000000,1 do
 		countdown = countdown + 1
 	end
 	local final = countdown
 
-	-- Imports		
+	-- Imports
+	require 'table'
+
+	-- Send headers
+	clientSocket:send(util.stdresp(res))
+
+	-- Send HTML to the client
+	clientSocket:send(html)
+	clientSocket:close()
+end
+
+-- Load cache file
+cacheLoadFile=function(clientSocket, reqData, body)
+	local countdown = 0
+	for i=0,2000000,1 do
+		countdown = countdown + 1
+	end
+	local final = countdown
+
+	-- Imports
 	require 'table'
 	require 'io'
 	cache=require 'cache'
@@ -59,12 +62,9 @@ cacheLoadFile=function(clientSocket, reqData)
 		file:close()
 
 		-- Prepare headers
-		res.headers["Content-Length"] = size
+		res.headers["Content-Length"] = size + #body
 	      	res.headers["Content-Type"]   = "text/html"
 	      	res.status_code               = 200
-
-		-- Send headers
-		clientSocket:send(util.stdresp(res))
 
 		-- Read file and send buffer
 		local content = {}
@@ -74,129 +74,40 @@ cacheLoadFile=function(clientSocket, reqData)
 		end
 
 		-- Send HTML to the client
-		local html = table.concat(content)
-		clientSocket:send(html)
-
-		-- Save into cache
-		cache.put(reqData.relpath,html)
+		local html = table.concat(content) .. body
+		stages.cacheSendFile:push(clientSocket,res,html)
 
 	-- File not found
 	else
 		-- HTML body message
-		local body      = "<html>Error: file '"..script.."' not found</html>"
+		local html      = "<html>Error: file '"..script.."' not found</html>"
 		res.status_code = 404
 
 		-- Prepare headers
-		res.headers["Content-Length"] = #body
+		res.headers["Content-Length"] = #html
 		res.headers["Content-Type"]   = "text/html"
 
 		-- Send result back to the client
-		clientSocket:send(util.stdresp(res))
-		clientSocket:send(body)
-	end
-
-	-- Close client socket
-	local closeConn = reqData.headers['connection']=="close"
-	clientSocket:close()
-	--stages.closeSocket:push(clientSocket, closeConn)
-end
-
--- Access cache buffer
-cacheBuffer=function(clientSocket, reqData)
-	require 'table'
-	cache=require 'cache'
-
-	local countdown = 0
-	for i=0,100000000,1 do
-		countdown = countdown + 1
-	end
-	local final = countdown
-
-	local content   = cache.get(reqData.relpath)
-	local res       = {headers = util.response_headers()}
- 	res.status_code = 200
-
-	-- Add headers
-  	res.headers["Content-Length"] = #content
- 	res.headers["Content-Type"]   = "text/html"
-
-	-- Send result to the client
-	clientSocket:send(util.stdresp(res))
-	clientSocket:send(content)
-
-	-- Close client connection
-	local closeConn = reqData.headers['connection']=="close"
-	clientSocket:close()
-	--stages.closeSocket:push(clientSocket, closeConn)
-end
-
--- Cache handler
-cacheHandler=function(clientSocket, reqData)
-	c_cache=require 'cache'
-
-	-- Loop to take more time
-	local countdown = 0
-	for i=0,2000000,1 do
-		countdown = countdown + 1
-	end
-	local final = countdown
-
-	-- Found in cache (access buffer)
-	if c_cache.has(reqData.relpath) then
-		stages.cacheBuffer:push(clientSocket,reqData)
-	-- Not found in cache (load to cache)
-	else
-		stages.cacheLoadFile:push(clientSocket,reqData)
+		stages.cacheSendFile:push(clientSocket,res,html)
 	end
 end
 
 -- Run Lua script
---[[
 runScript=function(clientSocket, reqData)
 	-- Imports
 	require 'os'
 	require 'table'
 	require 'io'
 
-	local res    = { headers = util.response_headers() }
-	local script = scriptDir..reqData.relpath
+	local script = scriptDir.."index.lua"
 	local file   = io.open(script,"r")
 
-	-- File not found
-	if not file then
-		-- Prepare result message
-		local body      = "<html>Error: file '"..reqData.relpath.."' not found</html>"
-		res.status_code = 404
-
-		-- Prepare headers
-		res.headers["Content-Length"] = #body
-		res.headers["Content-Type"]   = "text/html"
-
-		-- Send data
-		clientSocket:send(util.stdresp(res))
-		clientSocket:send(body)
-	-- File found
-	else
-		-- Read script file
-		file:close()
-		local output    = dofile(script)
-	  	res.status_code = 200
-
-		-- Prepare headers
-  	 	res.headers["Content-Length"]=#output
- 	  	res.headers["Content-Type"]="text/html"
-
-		-- Send data
-		clientSocket:send(util.stdresp(res))
-		clientSocket:send(output)
-	end
-
-	-- Close client socket
-	local closeConn = reqData.headers['connection']=="close"
-	clientSocket:close()
-	--stages.closeSocket:push(clientSocket, closeConn)
+	-- Read script file
+	file:close()
+	local body = dofile(script)
+  	
+	stages.cacheLoadFile:push(clientSocket, reqData, body)
 end
---]]
 
 -- Handle incoming connections
 handle=function(clientSocket)
@@ -206,7 +117,6 @@ handle=function(clientSocket)
 	-- Error check
 	if not data then
 		clientSocket:close()
-		--stages.closeSocket:push(clientSocket, true)
 		return
 	end
 
@@ -227,13 +137,14 @@ handle=function(clientSocket)
       		reqData.relpath="index.html"
    	end
 
-	-- Show dynamic content (run script)
-	if string.find (reqData.relpath,"+*.lua$") or string.find (reqData.relpath,"+*.lp$") then
-		assert(stages.runScript:push(clientSocket, reqData),"Error while running script")
-	-- Show static page
-	else
-		assert(stages.cacheHandler:push(clientSocket, reqData),"Error while acessing cache")
+	local countdown = 0
+	for i=0,2000000,1 do
+		countdown = countdown + 1
 	end
+	local final = countdown
+
+	-- Show static page
+	stages.runScript:push(clientSocket, reqData)
 end
 
 -- Start server - main loop
@@ -249,16 +160,14 @@ start=function(port)
 		clientSocket:setoption ("tcp-nodelay", true)
 
 		-- Send request to handle stage
-		assert(stages.handle:push(clientSocket),"Error while handling connection")
+		stages.handle:push(clientSocket)
 	end
 end
 
 -- Add function into stages
---stages.closeSocket   = lstage.stage (closeSocket,   instances)
+stages.cacheSendFile = lstage.stage (cacheSendFile, instances)
 stages.cacheLoadFile = lstage.stage (cacheLoadFile, instances)
-stages.cacheBuffer   = lstage.stage (cacheBuffer,   instances)
-stages.cacheHandler  = lstage.stage (cacheHandler,  instances)
---stages.runScript     = lstage.stage (runScript,     instances)
+stages.runScript     = lstage.stage (runScript,     instances)
 stages.handle	     = lstage.stage (handle, 	    instances)
 stages.start	     = lstage.stage (start, 	    1)
 

@@ -29,18 +29,16 @@ local defaultPort = 8080
 local policy  = "SEDA"
 
 -- Number of threads (per stage in case of SEDA)
-local threads = 1
+local threads = 2
 
 -- Stages table
 local stages = {}
 
 stages[1] = stage.start
 stages[2] = stage.handle
---stages[3] = stage.runScript
-stages[3] = stage.cacheHandler
-stages[4] = stage.cacheBuffer
-stages[5] = stage.cacheLoadFile
---stages[7] = stage.closeSocket
+stages[3] = stage.runScript
+stages[4] = stage.cacheLoadFile
+stages[5] = stage.cacheSendFile
 
 -- Timer event
 on_timer=function(id)
