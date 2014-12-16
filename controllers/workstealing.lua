@@ -16,6 +16,21 @@ local stages 	   = {}
 local lstage 	   = require 'lstage'
 local pool   	   = require 'lstage.pool'
 
+function workstealing.compare(a,b)
+  local aRate = a:getInputCount()
+  local bRate = b:getInputCount()
+
+  if (aRate ~= 0) then
+     aRate = (a:getProcessedCount() * 100) / aRate
+  end
+
+  if (bRate ~= 0) then
+    bRate = (b:getProcessedCount() * 100) / bRate
+  end
+
+  return aRate > bRate
+end
+
 --[[
 	<summary>
 		Used to refresh stage's rate
@@ -28,17 +43,39 @@ function workstealing.on_timer(id)
 		return
 	end
 
+	table.sort(stages,workstealing.compare)
+
 	for i=2,#stages,1 do
 		local current = stages[i]
 		local prior   = stages[i-1]
 
-		local currentSize = current:size() + (current:instances() - current:instancesize())
-		local priorSize   = prior:size() + (prior:instances() - prior:instancesize())
-		local priorPool   = prior:pool()
-
-		if (currentSize > priorSize and priorPool:size() > 1) then
-			current:steal(prior,1)
+		local currentRate = current:getInputCount()
+		local priorRate   = prior:getInputCount()
+ 
+		if (currentRate ~= 0) then
+			currentRate = (current:getProcessedCount() * 100) / currentRate
 		end
+
+		if (priorRate ~= 0) then
+			priorRate = (prior:getProcessedCount() * 100) / priorRate
+		end
+
+		-- Check if we have different rate
+		if (currentRate ~= priorRate and currentRate > priorRate) then
+			local currentPool = current:pool()
+			local priorPool = prior:pool()
+			local priorPoolSize = priorPool:size()
+
+			if (priorPoolSize > 1 and current:instances() >= (currentPool:size() + 1)) then
+				print(i.." roubou do estágio "..i-1)
+				current:steal(prior,1)
+			end
+		end
+	end
+
+	-- Reset statistics
+	for i,stage in ipairs(stages) do
+		stage:resetStatistics()
 	end
 end
 

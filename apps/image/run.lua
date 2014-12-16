@@ -14,7 +14,7 @@ local stage 	  = require 'stage' 	  -- Project stages
 
 -- Available controllers
 -- {SRPT,MG1,SEDA,DYNAMIC,COLOR}
-local policy 	      = "SEDA"
+local policy 	      = "DBR"
 local instanceControl = false
 
 -- Input directory
@@ -23,7 +23,7 @@ local inputDir  = "in/images/in/in_big"
 --local inputDir  = "in"
 
 -- Number of threads (per stage in case of SEDA)
-local threads = 8
+local threads = 7
 
 -- Stages table
 local stages = {}

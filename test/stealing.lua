@@ -72,6 +72,8 @@ stage1:steal(stage2,2)
 local stages = {stage1,stage2,stage3,stage4,stage3,stage2}
 lstage.buildpollingtable(stages)
 
+stage4:firewhenfocused()
+
 -- [-1] global ready queue
 -- [0] private ready queue
 -- [1] private ready queue with turning back
@@ -81,9 +83,16 @@ lstage.pool:add(4)
 
 -- Fire [maxsteps]
 max_steps_reached=function()
-	print("Fired!")
-	stages = {stage4,stage3,stage2,stage1}
+	print("Fired max_steps_reached!")
+	--stages = {stage4,stage3,stage2,stage1}
 	--lstage.buildpollingtable(stages)
+end
+
+-- Fire [maxsteps]
+is_focused=function()
+	print("Fired is_focused!")
+	local s = {stage1,stage2,stage3,stage4,stage3,stage2}
+	lstage.buildpollingtable(s)
 end
 
 for i,stage in ipairs(stages) do

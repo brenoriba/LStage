@@ -151,9 +151,10 @@ static void thread_resume_instance(instance_t i) {
 				i->args=n;
 				
 				// Increment processed count - used to build statistics
-				//LOCK(i->stage);
-				//i->stage->processed++;
-				//UNLOCK(i->stage);
+				LOCK(i->stage);
+				int processedCount  = i->stage->processed;
+				i->stage->processed = processedCount + 1;
+				UNLOCK(i->stage);
 
 			} else {
 				lua_pushliteral(L,STAGE_HANDLER_KEY);
@@ -189,15 +190,19 @@ static void thread_resume_instance(instance_t i) {
 // lstage.c [lstage_build_polling_table - linked list to use polling tables]
 extern stageCell_t firstCell;
 
+static pthread_mutex_t lock;
+static int threadsCount = 0;
+
 // Thread main loop - called when a new thread is created
 // pool.c - "pool_addthread"
 static THREAD_RETURN_T THREAD_CALLCONV thread_mainloop(void *t_val) {
    // Var declarations
-   thread_t   self	       = (thread_t)t_val;
-   stageCell_t currentCell     = NULL;
-   instance_t i		       = NULL;
-   steal_t    stealFrom        = NULL;
-   int        processedInFocus = 0;
+   thread_t    self	        = (thread_t)t_val;
+   stageCell_t currentCell      = NULL;
+   instance_t  i	        = NULL;
+   steal_t     stealFrom        = NULL;
+   int         processedInFocus = 0;
+   int         threadsVisits    = 0;
 
    // Queue type
    enum lstage_private_queue_flag queueFlag = lstage_get_ready_queue_type ();
@@ -206,6 +211,11 @@ static THREAD_RETURN_T THREAD_CALLCONV thread_mainloop(void *t_val) {
    if (queueFlag != I_GLOBAL_QUEUE) {
    	while (firstCell == NULL) { }
 	currentCell = firstCell;
+
+	// Used to fire events when threads visit some stages
+	pthread_mutex_lock(&lock);
+	threadsCount++;
+	pthread_mutex_unlock(&lock);
    }
 
    while(1) {
@@ -219,7 +229,6 @@ static THREAD_RETURN_T THREAD_CALLCONV thread_mainloop(void *t_val) {
 	stealFrom = NULL;
         if (lstage_lfqueue_try_pop (self->pool->stealing_queue,&stealFrom)) {
 		LOCK(self->pool);
-
 		// Update counter
 		stealFrom->stealCount--;
 
@@ -231,14 +240,13 @@ static THREAD_RETURN_T THREAD_CALLCONV thread_mainloop(void *t_val) {
 		self->pool=stealFrom->toPool;
 
 		// We still have to stole threads [put at the end of the queue]
-        	if (stealFrom->stealCount > 0) {
-		        lstage_lfqueue_try_push (self->pool->stealing_queue,&stealFrom);
+		if (stealFrom->stealCount > 0) {
+			lstage_lfqueue_try_push (self->pool->stealing_queue,&stealFrom);
 		// We don have to steal anymore [destroy object]
-        	} else {
+		} else {
 			free(stealFrom);
 			stealFrom=NULL;
 		}
-
 		UNLOCK(self->pool);
         }
 
@@ -261,6 +269,11 @@ static THREAD_RETURN_T THREAD_CALLCONV thread_mainloop(void *t_val) {
 		if (currentCell->stage->max_events > 0 &&
 		    processedInFocus > currentCell->stage->max_events)
 		{
+			// We can fire the event again
+			if (currentCell->stage->threadsVisits >= threadsCount) {
+				currentCell->stage->threadsVisits = 0;
+			}
+
 			// Update cursor
 			currentCell = currentCell->nextCell;
 			if (currentCell == NULL) {
@@ -275,6 +288,11 @@ static THREAD_RETURN_T THREAD_CALLCONV thread_mainloop(void *t_val) {
 		if (i==NULL) {
 			// Private queue with no turning back
 			if (queueFlag == I_PRIVATE_QUEUE) {
+				// We can fire the event again
+				if (currentCell->stage->threadsVisits >= threadsCount) {
+					currentCell->stage->threadsVisits = 0;
+				}
+
 				// No instance (get next stage)
 				currentCell = currentCell->nextCell;
 				if (currentCell == NULL) {
@@ -282,6 +300,11 @@ static THREAD_RETURN_T THREAD_CALLCONV thread_mainloop(void *t_val) {
 				}
 			// Private queue with turning back
 			} else {
+				// We can fire the event again
+				if (currentCell->stage->threadsVisits >= threadsCount) {
+					currentCell->stage->threadsVisits = 0;
+				}
+
 				// Get next stage (we get first if at least one event was processed)
 				if (processedInFocus > 0) {
 					currentCell = firstCell;
@@ -293,11 +316,6 @@ static THREAD_RETURN_T THREAD_CALLCONV thread_mainloop(void *t_val) {
 					}
 				}
 			}
-
-			// Fire event because priority has changed
-			if (currentCell->stage->fire_priority == 1) {
-				//lstage_stage_was_focused();
-		        }
 			processedInFocus = 0;
 		}
 
@@ -316,6 +334,19 @@ static THREAD_RETURN_T THREAD_CALLCONV thread_mainloop(void *t_val) {
 			
 			// If at least one event was processed
 			processedInFocus++;
+
+			// Fire event because priority has changed
+			if (currentCell->stage->fire_priority == 1) {
+				LOCK(currentCell->stage);
+				threadsVisits = currentCell->stage->threadsVisits;
+				// Let's fire the event
+				if (threadsVisits == 0) {
+					lstage_stage_was_focused();
+				}
+				threadsVisits++;
+				currentCell->stage->threadsVisits = threadsVisits;
+				UNLOCK(currentCell->stage);
+			}
 		}
 	}
    }

@@ -43,7 +43,7 @@ struct lstage_Stage {
    volatile unsigned int flags;
    volatile int priority;
    stage_t parent;
-
+   int threadsVisits;
    int lock;
 };
 

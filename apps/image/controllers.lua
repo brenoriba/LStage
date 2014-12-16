@@ -14,6 +14,7 @@ local mg1          = require 'lstage.controllers.mg1'
 local dynamic      = require 'lstage.controllers.dynamic'
 local seda         = require 'lstage.controllers.seda'
 local workstealing = require 'lstage.controllers.workstealing'
+local dbr          = require 'lstage.controllers.dbr'
 
 -- Global vars
 local wrapper = {}
@@ -74,9 +75,14 @@ wrapper.cohort = function (stagesTable, threads)
 	lstage.pool:add(threads)
 end
 
+-- DBR configure method
+wrapper.dbr = function (stagesTable, threads)
+	dbr.configure(stagesTable, threads)
+end
+
 -- Workstealing configure method
 wrapper.workstealing = function (stagesTable, threads)
-	workstealing.configure(stagesTable, threads, 3)
+	workstealing.configure(stagesTable, threads, 10)
 end
 
 -- MG1 configure method
@@ -115,7 +121,11 @@ wrapper.configure = function (stages, policy, threads, instanceControl)
 	if (policy == "SRPT") then
 		print("Creating "..threads.." thread(s)")
 		print("*********************************\n")
-		wrapper.srpt (stages, threads, instanceControl)
+
+	elseif (policy == "DBR") then
+		print("Creating "..threads.." thread(s)")
+		print("*********************************\n")
+		wrapper.dbr (stages, threads)
 
 	elseif (policy == "COHORT") then
 		print("Creating "..threads.." thread(s)")

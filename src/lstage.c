@@ -127,6 +127,24 @@ static int get_cpus() {
    return 0;
 }
 
+// Fire event when thread focus another stage
+void lstage_stage_was_focused () {
+	// Sanity check
+	if (L_main == NULL) {
+		return;
+	}
+
+	// Call "lost_focus" function
+	lua_getglobal(L_main, "is_focused");
+
+	if(lua_type(L_main,-1)==LUA_TFUNCTION) {
+      		lua_call(L_main,0,0);
+   	} else {	
+		printf("Lost 'is_focused' callback\n");
+      		lua_pop(L_main,1);
+	}
+}
+
 // Callback call - "on_timer" function
 static void lstage_timer_event (evutil_socket_t fd, short events, void *arg) {
 	// Sanity check
@@ -143,44 +161,6 @@ static void lstage_timer_event (evutil_socket_t fd, short events, void *arg) {
 		printf("Lost on_timer callback\n");
       		lua_pop(L_main,1);
 	}
-}
-
-static void lstage_event_focused (evutil_socket_t fd, short events, void *arg) {
-	// Sanity check
-	if (L_main == NULL) {
-		return;
-	}
-
-	// Call "lost_focus" function
-	lua_getglobal(L_main, "is_focused");
-
-	if(lua_type(L_main,-1)==LUA_TFUNCTION) {
-      		lua_call(L_main,0,0);
-   	} else {	
-		printf("Lost 'is_focused' callback\n");
-      		lua_pop(L_main,1);
-	}
- }
-
-// Fire event when thread focus another stage
-void lstage_stage_was_focused () {
-	// Stored in [dispatch_events] function
-	if (L_main == NULL) {
-		return;
-	}
-
-	// Creating new event
-	if (lstage_event_base == NULL)
-		lstage_event_base = event_base_new();
-
-	// Failed to create
-	if (!lstage_event_base) {
-		printf("Error while creating new event base\n");
-	   	return;
-	}
-
-	// Configuring "lost_focus" event
-   	event_base_once(lstage_event_base, -1, EV_READ, lstage_event_focused, 0, NULL);
 }
 
 // Insert timer event

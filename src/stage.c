@@ -101,7 +101,8 @@ static int stage_push(lua_State *L) {
 
    // Increment input count
    LOCK(s);
-   s->inputCount++;
+   int inputCount = s->inputCount;
+   s->inputCount = inputCount + 1;   
    UNLOCK(s);
 
    // Check if the stage is enabled to receive new events
@@ -387,6 +388,30 @@ static int stage_getparent(lua_State * L) {
 	return 1;
 }
 
+// Get input events count
+static int stage_input_count(lua_State * L) {
+	stage_t s = lstage_tostage(L, 1);
+	lua_pushinteger(L,s->inputCount);
+	return 1;
+}
+
+// Get processed events count
+static int stage_processed_count(lua_State * L) {
+	stage_t s = lstage_tostage(L, 1);
+	lua_pushinteger(L,s->processed);
+	return 1;
+}
+
+// Reset statistics
+static int stage_reset_statistics (lua_State * L) {
+ 	stage_t s = lstage_tostage(L, 1);
+	s->inputCount=0;
+	s->processed=0;
+
+	lua_pushvalue(L,1);
+	return 1;
+}
+
 static const struct luaL_Reg StageMetaFunctions[] = {
 		{"__eq",stage_eq},
 		{"__tostring",stage_tostring},
@@ -416,10 +441,9 @@ static const struct luaL_Reg StageMetaFunctions[] = {
 		{"max_events_when_focused",stage_max_events_when_focused},
 		{"firewhenfocused",stage_fire_when_focused},
 		{"donotfirewhenfocused",stage_do_not_fire_when_focused},
-
-		//{"getArrivalRate",stage_arrival_rate},
-		//{"getServiceRate",stage_service_rate},
-
+		{"getInputCount",stage_input_count},
+		{"getProcessedCount",stage_processed_count},
+		{"resetStatistics",stage_reset_statistics},
 		{NULL,NULL}
 };
 
@@ -513,9 +537,12 @@ static int lstage_newstage(lua_State * L) {
 	}
 	lua_pop(L,1);
 
-   (*stage)->fire_priority = 0;
-   (*stage)->max_events = -1;
+   (*stage)->fire_priority      = 0;
+   (*stage)->max_events         = -1;
    (*stage)->processed_in_focus = 0;
+   (*stage)->inputCount         = 0;
+   (*stage)->processed          = 0;
+   (*stage)->threadsVisits 	= 0;
 
    // Events combined with instances - ready to be processed
    (*stage)->ready_queue=lstage_pqueue_new();

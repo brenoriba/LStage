@@ -1,9 +1,7 @@
 --[[
 	**************************************** PUC-RIO 2014 ****************************************
-
 	Implemented by Breno Riba		
 	On July 2014
-
 	**********************************************************************************************
 ]]--
 
@@ -15,7 +13,7 @@ local util    = require "util"
 
 -- Global vars
 local stages    = {}
-local instances = 2
+local instances = 5
 
 -- Scripts directory
 local scriptDir = "scripts/"
@@ -23,7 +21,7 @@ local scriptDir = "scripts/"
 -- Send answer
 cacheSendFile=function(clientSocket, res, html)
 	local countdown = 0
-	for i=0,2000000,1 do
+	for i=0,30000000,1 do
 		countdown = countdown + 1
 	end
 	local final = countdown
@@ -42,7 +40,7 @@ end
 -- Load cache file
 cacheLoadFile=function(clientSocket, reqData, body)
 	local countdown = 0
-	for i=0,2000000,1 do
+	for i=0,30000000,1 do
 		countdown = countdown + 1
 	end
 	local final = countdown
@@ -54,42 +52,15 @@ cacheLoadFile=function(clientSocket, reqData, body)
 
 	local res    = { headers=util.response_headers() }
 	local script = scriptDir..reqData.relpath
-	local file   = io.open(script,"r")
+        local html      = "<html>Hello there</html>"..body
 
-	-- File was found
-	if file then
-		local size = file:seek("end")			
-		file:close()
+	-- Prepare headers
+	res.headers["Content-Length"] = #html + #body
+	res.headers["Content-Type"]   = "text/html"
+	res.status_code               = 200
 
-		-- Prepare headers
-		res.headers["Content-Length"] = size + #body
-	      	res.headers["Content-Type"]   = "text/html"
-	      	res.status_code               = 200
-
-		-- Read file and send buffer
-		local content = {}
-		local count   = 0
-		for line in io.lines(script) do 
-			content[#content + 1] = line
-		end
-
-		-- Send HTML to the client
-		local html = table.concat(content) .. body
-		stages.cacheSendFile:push(clientSocket,res,html)
-
-	-- File not found
-	else
-		-- HTML body message
-		local html      = "<html>Error: file '"..script.."' not found</html>"
-		res.status_code = 404
-
-		-- Prepare headers
-		res.headers["Content-Length"] = #html
-		res.headers["Content-Type"]   = "text/html"
-
-		-- Send result back to the client
-		stages.cacheSendFile:push(clientSocket,res,html)
-	end
+	-- Send result back to the client
+	stages.cacheSendFile:push(clientSocket,res,html)
 end
 
 -- Run Lua script
@@ -100,11 +71,12 @@ runScript=function(clientSocket, reqData)
 	require 'io'
 
 	local script = scriptDir.."index.lua"
-	local file   = io.open(script,"r")
+	--local file   = io.open(script,"r")
 
 	-- Read script file
-	file:close()
-	local body = dofile(script)
+	--file:close()
+	--local body = dofile(script)
+        local body = "my way"
   	
 	stages.cacheLoadFile:push(clientSocket, reqData, body)
 end
@@ -138,7 +110,7 @@ handle=function(clientSocket)
    	end
 
 	local countdown = 0
-	for i=0,2000000,1 do
+	for i=0,30000000,1 do
 		countdown = countdown + 1
 	end
 	local final = countdown
