@@ -18,11 +18,97 @@
 	**********************************************************************************************
 ]]--
 
-local mg1          = {}
-local lstage       = require 'lstage'
-local sort         = require 'lstage.utils.mergesort'
-local stages       = {}
-local newInstances = false
+local mg1    = {}
+local lstage = require 'lstage'
+local stages = {}
+
+function mg1.compare(a,b)
+  return a.visits > b.visits
+end
+
+function mg1.buildVisitOrder (pollingTable)
+	-- Build new polling table
+	local newVisitOrder = {}
+	local maxSize 	    = #pollingTable
+	local firstCell     = pollingTable[1]
+	local lastCell	    = pollingTable[maxSize]
+	local index 	    = 1
+
+	repeat
+		-- Insert into polling table
+		if (pollingTable[index].visits ~= 0) then
+			table.insert(newVisitOrder, pollingTable[index].stage)
+			pollingTable[index].visits = pollingTable[index].visits - 1
+
+			-- Restart polling table at first stage with visits 
+			-- different from 0
+			if (index > 1) then
+				index = 1
+			else
+				index = index + 1
+			end
+		elseif (index >= maxSize) then
+			index = 1
+		else
+			index = index + 1
+		end
+	-- Until last stage
+	until (firstCell.visits == 0 and lastCell.visits == 0)
+	return newVisitOrder
+end
+
+function is_focused()
+	require 'math'
+
+	-- Validate ID number
+	if (id ~= 100) then
+		return
+	end
+
+	local pollingTable = {}
+	local total = 0
+	local lastInputCount = 0
+	local equalInputCount = 1
+
+	-- Get demand for each stage
+	for i,stage in ipairs(stages) do
+		pollingTable[i]        = {}
+		pollingTable[i].stage  = stage
+		pollingTable[i].load   = stage:getInputCount()
+		pollingTable[i].visits = 0
+
+		total = load + pollingTable[i].load
+		stage:resetStatistics()
+
+		if (lastInputCount ~= 0 and lastInputCount ~= pollingTable[i].load) then
+			lastInputCount = 0
+		end
+		lastInputCount = pollingTable[i].load
+	end
+
+	if (equalInputCount == 0) then
+		local loadRate 	       = 0		
+		local pollingTableSize = #stages * 3
+	
+		-- Calculate visits
+		for i,cell in ipairs(pollingTable) do
+			loadRate = (cell.load * 100) / total
+			pollingTable[i].visits = math.ceil((loadRate * pollingTableSize) / 100)
+		end
+
+		-- Sort by number of visits
+		table.sort(pollingTable, mg1.compare)
+
+		-- Build new polling table
+		local newVisitOrder = mg1.buildVisitOrder (pollingTable)
+
+		-- Build new polling table
+		lstage.buildpollingtable(newVisitOrder)
+	else
+		-- Same number of visits (we use the stages pipeline)
+		lstage.buildpollingtable(stages)
+	end
+end
 
 --[[
 	<summary>
@@ -30,10 +116,8 @@ local newInstances = false
 	</summary>
 	<param name="stagesTable">LEDA stages table</param>
 	<param name="numberOfThreads">Number of threads to be created</param>
-	<param name="refreshSeconds">Time (in seconds) to refresh stage's rate</param>
-	<param name="instanceControl">Create more instances to prior stages</param>
 ]]--
-function mg1.configure(stagesTable, numberOfThreads, refreshSeconds, instanceControl)
+function mg1.configure(stagesTable, numberOfThreads)
 	-- Creating threads
 	lstage.pool:add(numberOfThreads)
 
@@ -45,69 +129,17 @@ function mg1.configure(stagesTable, numberOfThreads, refreshSeconds, instanceCon
 
 	-- We keep table in a global because we will
 	-- use to get stage's rate at "on_timer" callback
-	stages       = stagesTable
-	newInstances = instanceControl
+	stages = stagesTable
 
-	-- Every "refreshSeconds" with ID = 100
-	lstage.add_timer(refreshSeconds, 100)
-end
+	lstage.useprivatequeues(0)
+	lstage.buildpollingtable(stages)
 
---[[
-	<summary>
-		Used to refresh stage's rate
-	</summary>
-	<param name="id">Timer ID</param>
-]]--
-function mg1.on_timer(id)
-	-- Validate ID number
-	if (id ~= 100) then
-		return
+	for i,stage in ipairs(stages) do
+		stage:max_events_when_focused(5)
 	end
 
-	local pollingTable = {}
-
-	-- Get queue size
-	for index=1,#stages do
-		local size = #pollingTable+1
-
-		pollingTable[size]       = {}
-		pollingTable[size].stage = stages[index].stage
-		pollingTable[size].rate  = stages[index].stage:size() + stages[index].stage:instances() - stages[index].stage:instancesize()
-	end
-
-	-- Sort by "rate" value
-	sort.MergeSort(pollingTable, 1, #pollingTable, "rate")
-	
-	local lastRate     = -1
-	local instanceSize = -1
-	local priority     = #pollingTable + 1
-
-	-- Give priority in ascending order
-	for index=#pollingTable,1,-1 do
-		-- Same "rate", same priority
-		if (lastRate ~= pollingTable[index].rate) then
-			priority = priority - 1	
-		end
-
-		pollingTable[index].stage:setpriority(priority)
-		lastRate = pollingTable[index].rate
-
-		-- Control new instances
-		if (newInstances) then
-			local stage 	   = pollingTable[index].stage			
-			local instanceSize = stage:instances()
-			local newInstances = priority - instanceSize
-
-			-- Check how many instances we have to create
-			if (newInstances > 0) then
-				stage:instantiate(newInstances)	
-			-- Check how many instances we have to remove
-			elseif (newInstances < 0) then
-				newInstances = newInstances * -1
-				stage:free(newInstances)
-			end
-		end
-	end
+	-- Configure last stage to fire when focused
+	lstage.fireLastFocused()
 end
 
 return mg1

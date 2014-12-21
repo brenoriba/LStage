@@ -189,9 +189,11 @@ static void thread_resume_instance(instance_t i) {
 
 // lstage.c [lstage_build_polling_table - linked list to use polling tables]
 extern stageCell_t firstCell;
+extern int         fireLastFocused;
 
 static pthread_mutex_t lock;
-static int threadsCount = 0;
+static int threadsCount  = 0;
+static int threadsVisits = 0;
 
 // Thread main loop - called when a new thread is created
 // pool.c - "pool_addthread"
@@ -201,8 +203,7 @@ static THREAD_RETURN_T THREAD_CALLCONV thread_mainloop(void *t_val) {
    stageCell_t currentCell      = NULL;
    instance_t  i	        = NULL;
    steal_t     stealFrom        = NULL;
-   int         processedInFocus = 0;
-   int         threadsVisits    = 0;
+   int         processedInFocus = 0;   
 
    // Queue type
    enum lstage_private_queue_flag queueFlag = lstage_get_ready_queue_type ();
@@ -224,7 +225,7 @@ static THREAD_RETURN_T THREAD_CALLCONV thread_mainloop(void *t_val) {
 
 	i=NULL;
 
-	// [Workstealing] If we have to stole a thread
+	// [Workstealing] If we have to steal a thread
 	// *** Works only with pool per stage ***
 	stealFrom = NULL;
         if (lstage_lfqueue_try_pop (self->pool->stealing_queue,&stealFrom)) {
@@ -269,14 +270,22 @@ static THREAD_RETURN_T THREAD_CALLCONV thread_mainloop(void *t_val) {
 		if (currentCell->stage->max_events > 0 &&
 		    processedInFocus > currentCell->stage->max_events)
 		{
-			// We can fire the event again
-			if (currentCell->stage->threadsVisits >= threadsCount) {
-				currentCell->stage->threadsVisits = 0;
-			}
-
 			// Update cursor
 			currentCell = currentCell->nextCell;
 			if (currentCell == NULL) {
+				// Fire event when last stage was focused
+				if (fireLastFocused == 1) {
+					pthread_mutex_lock(&lock);
+					// Fire callback
+					if (threadsVisits == 0) {
+						lstage_stage_was_focused();	
+					}
+					// We can fire the event again
+					if (++threadsVisits >= threadsCount) {
+						threadsVisits = 0;
+					}
+					pthread_mutex_unlock(&lock);
+				}
 				currentCell = firstCell;
 			}
 			processedInFocus = 0;
@@ -288,23 +297,26 @@ static THREAD_RETURN_T THREAD_CALLCONV thread_mainloop(void *t_val) {
 		if (i==NULL) {
 			// Private queue with no turning back
 			if (queueFlag == I_PRIVATE_QUEUE) {
-				// We can fire the event again
-				if (currentCell->stage->threadsVisits >= threadsCount) {
-					currentCell->stage->threadsVisits = 0;
-				}
-
 				// No instance (get next stage)
 				currentCell = currentCell->nextCell;
 				if (currentCell == NULL) {
+					// Fire event when last stage was focused
+					if (fireLastFocused == 1) {
+						pthread_mutex_lock(&lock);
+						// Fire callback
+						if (threadsVisits == 0) {
+							lstage_stage_was_focused();	
+						}
+						// We can fire the event again
+						if (++threadsVisits >= threadsCount) {
+							threadsVisits = 0;
+						}
+						pthread_mutex_unlock(&lock);
+					}
 					currentCell = firstCell;
 				}
 			// Private queue with turning back
 			} else {
-				// We can fire the event again
-				if (currentCell->stage->threadsVisits >= threadsCount) {
-					currentCell->stage->threadsVisits = 0;
-				}
-
 				// Get next stage (we get first if at least one event was processed)
 				if (processedInFocus > 0) {
 					currentCell = firstCell;
@@ -312,6 +324,19 @@ static THREAD_RETURN_T THREAD_CALLCONV thread_mainloop(void *t_val) {
 				} else {
 					currentCell = currentCell->nextCell;
 					if (currentCell == NULL) {
+						// Fire event when last stage was focused
+						if (fireLastFocused == 1) {
+							pthread_mutex_lock(&lock);
+							// Fire callback
+							if (threadsVisits == 0) {
+								lstage_stage_was_focused();	
+							}
+							// We can fire the event again
+							if (++threadsVisits >= threadsCount) {
+								threadsVisits = 0;
+							}
+							pthread_mutex_unlock(&lock);
+						}
 						currentCell = firstCell;
 					}
 				}
@@ -335,17 +360,18 @@ static THREAD_RETURN_T THREAD_CALLCONV thread_mainloop(void *t_val) {
 			// If at least one event was processed
 			processedInFocus++;
 
-			// Fire event because priority has changed
-			if (currentCell->stage->fire_priority == 1) {
-				LOCK(currentCell->stage);
-				threadsVisits = currentCell->stage->threadsVisits;
-				// Let's fire the event
+			// Fire event when last stage was focused
+			if (fireLastFocused == 1) {
+				pthread_mutex_lock(&lock);
+				// Fire callback
 				if (threadsVisits == 0) {
-					lstage_stage_was_focused();
+					lstage_stage_was_focused();	
 				}
-				threadsVisits++;
-				currentCell->stage->threadsVisits = threadsVisits;
-				UNLOCK(currentCell->stage);
+				// We can fire the event again
+				if (++threadsVisits >= threadsCount) {
+					threadsVisits = 0;
+				}
+				pthread_mutex_unlock(&lock);
 			}
 		}
 	}

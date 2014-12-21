@@ -191,7 +191,14 @@ static int add_timer(lua_State * L) {
 }
 
 // Used to build polling table
-stageCell_t firstCell = NULL;
+stageCell_t firstCell       = NULL;
+int         fireLastFocused = 0;
+
+// Configured to fire event when the last stage is visit by the first thread
+static int lstage_fire_last_focused (lua_State * L) {
+	fireLastFocused = 1;
+	return 1;
+}
 
 // Free last polling table
 static void freePollingTable (stageCell_t mainCell) {
@@ -402,6 +409,7 @@ static const struct luaL_Reg LuaExportFunctions[] = {
 	{"useprivatequeues", lstage_use_private_queues},
 	{"dispatchevents", dispatch_events},
 	{"buildpollingtable",lstage_build_polling_table},
+	{"fireLastFocused",lstage_fire_last_focused},
 	{"maxsteps",lstage_max_queue_steps},
 	{NULL,NULL}
 	};

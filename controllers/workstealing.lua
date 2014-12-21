@@ -28,7 +28,7 @@ function workstealing.compare(a,b)
     bRate = (b:getProcessedCount() * 100) / bRate
   end
 
-  return aRate > bRate
+  return aRate < bRate
 end
 
 --[[
@@ -45,31 +45,22 @@ function workstealing.on_timer(id)
 
 	table.sort(stages,workstealing.compare)
 
-	for i=2,#stages,1 do
-		local current = stages[i]
-		local prior   = stages[i-1]
+	if (#stages >= 4) then
+		local first = 1
+		local last  = #stages
+	
+		for i=1,2,1 do
+			local firstPool = stages[first]:pool()
+			local lastPool = stages[last]:pool()
+			local lastPoolSize = lastPool:size()
 
-		local currentRate = current:getInputCount()
-		local priorRate   = prior:getInputCount()
- 
-		if (currentRate ~= 0) then
-			currentRate = (current:getProcessedCount() * 100) / currentRate
-		end
-
-		if (priorRate ~= 0) then
-			priorRate = (prior:getProcessedCount() * 100) / priorRate
-		end
-
-		-- Check if we have different rate
-		if (currentRate ~= priorRate and currentRate > priorRate) then
-			local currentPool = current:pool()
-			local priorPool = prior:pool()
-			local priorPoolSize = priorPool:size()
-
-			if (priorPoolSize > 1 and current:instances() >= (currentPool:size() + 1)) then
-				print(i.." roubou do estágio "..i-1)
-				current:steal(prior,1)
+			if (lastPoolSize > 1 and stages[first]:instances() >= (firstPool:size() + 1)) then
+				print(first.." roubou do estágio "..last)
+				stages[first]:steal(stages[last],1)
 			end
+
+			first = first + 1
+			last  = last - 1
 		end
 	end
 
