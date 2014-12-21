@@ -77,13 +77,14 @@ function is_focused()
 		pollingTable[i].load   = stage:getInputCount()
 		pollingTable[i].visits = 0
 
-		total = load + pollingTable[i].load
-		stage:resetStatistics()
-
 		if (lastInputCount ~= 0 and lastInputCount ~= pollingTable[i].load) then
-			lastInputCount = 0
+			equalInputCount = 0
 		end
+
 		lastInputCount = pollingTable[i].load
+		total = total + lastInputCount
+
+		stage:resetStatistics()
 	end
 
 	if (equalInputCount == 0) then
@@ -131,8 +132,8 @@ function mg1.configure(stagesTable, numberOfThreads)
 	-- use to get stage's rate at "on_timer" callback
 	stages = stagesTable
 
-	lstage.useprivatequeues(0)
 	lstage.buildpollingtable(stages)
+	lstage.useprivatequeues(0)
 
 	for i,stage in ipairs(stages) do
 		stage:max_events_when_focused(5)
