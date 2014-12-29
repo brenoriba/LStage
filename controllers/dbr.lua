@@ -67,7 +67,7 @@ end
 		Fire when stage is focused
 	</summary>
 ]]--
-function is_focused()
+function dbr.is_focused()
 	-- Disable focus
 	stages[#stages]:donotfirewhenfocused()
 

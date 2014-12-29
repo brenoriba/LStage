@@ -17,10 +17,10 @@ local debug 	= false
 
 -- How many instances each stage will have
 -- (we use the same as the number of threads)
-local instances = 7
+local instances = 2
 
 -- How many images will be thrown in grayscale stage
-local blockSize = 2
+local blockSize = 20
 
 -- Save images
 stage.save={}

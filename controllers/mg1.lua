@@ -60,11 +60,6 @@ end
 function is_focused()
 	require 'math'
 
-	-- Validate ID number
-	if (id ~= 100) then
-		return
-	end
-
 	local pollingTable = {}
 	local total = 0
 	local lastInputCount = 0

@@ -7,6 +7,8 @@
 	**********************************************************************************************
 ]]--
 
+require 'lstage.controllers.mg1'
+
 -- Controllers
 local lstage       = require 'lstage'
 local srpt         = require 'lstage.controllers.srpt'
@@ -138,16 +140,9 @@ wrapper.configure = function (stages, policy, threads, instanceControl)
 		wrapper.workstealing (stages, threads)
 
 	elseif (policy == "MG1") then
-		-- Prepare MG1 table
-		local mg1Stages = {}
-		for ix=1,#stages do
-			mg1Stages[#mg1Stages+1]         = {}
-			mg1Stages[#mg1Stages].stage     = stages[ix]
-		end
-
 		print("Creating "..threads.." thread(s)")
 		print("*********************************\n")
-		wrapper.mg1 (mg1Stages, threads, instanceControl)
+		wrapper.mg1 (stages, threads)
 
 	elseif (policy == "SEDA") then
 		--threads = math.ceil(threads / #stages)
