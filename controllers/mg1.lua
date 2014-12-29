@@ -100,9 +100,6 @@ function is_focused()
 
 		-- Build new polling table
 		lstage.buildpollingtable(newVisitOrder)
-	else
-		-- Same number of visits (we use the stages pipeline)
-		lstage.buildpollingtable(stages)
 	end
 end
 
