@@ -361,7 +361,7 @@ static THREAD_RETURN_T THREAD_CALLCONV thread_mainloop(void *t_val) {
 			processedInFocus++;
 
 			// Fire event when last stage was focused
-			if (fireLastFocused == 1) {
+			/*if (fireLastFocused == 1) {
 				pthread_mutex_lock(&lock);
 				// Fire callback
 				if (threadsVisits == 0) {
@@ -372,7 +372,7 @@ static THREAD_RETURN_T THREAD_CALLCONV thread_mainloop(void *t_val) {
 					threadsVisits = 0;
 				}
 				pthread_mutex_unlock(&lock);
-			}
+			}*/
 		}
 	}
    }
@@ -421,14 +421,76 @@ void lstage_pushinstance(instance_t i) {
 		return lstage_pqueue_push(i->stage->ready_queue,(void **) &(i));
 }
 
+/*
+ *********************************************************************************
+ [SCHEDULER] INTERFACE MODEL
+ *********************************************************************************
+*/
+
+// Set threads visit order
+static int scheduler_visitOrder(lua_State * L) {
+	lua_pushinteger(L,400);
+	return 1;
+}
+
+// Max events to be processed by a thread when visiting a stage
+static int scheduler_maxVisits(lua_State * L) {
+	lua_pushinteger(L,400);
+	return 1;
+}
+
+// Restart at visit order index
+static int scheduler_restartAtIndex(lua_State * L) {
+	lua_pushinteger(L,400);
+	return 1;
+}
+
+// Do not restart when changing stage
+static int scheduler_doNotRestart(lua_State * L) {
+	lua_pushinteger(L,400);
+	return 1;
+}
+
+// Steal a thread from a stage's pool
+static int scheduler_steal(lua_State * L) {
+	lua_pushinteger(L,400);
+	return 1;
+}
+
+// Set stage priority
+static int scheduler_setPriority(lua_State * L) {
+	lua_pushinteger(L,400);
+	return 1;
+}
+
+// Get stage priority
+static int scheduler_getPriority(lua_State * L) {
+	lua_pushinteger(L,400);
+	return 1;
+}
+
+// Set max events to be processed when focused by a thread
+static int scheduler_maxEventsWhenFocused(lua_State * L) {
+	lua_pushinteger(L,400);
+	return 1;
+}
+
 static const struct luaL_Reg LuaExportFunctions[] = {
 	{"build",thread_from_ptr},
+	
+	// Interface model
+	{"visitOrder",scheduler_visitOrder},
+	{"maxVisits",scheduler_maxVisits},
+	{"restartAtIndex",scheduler_restartAtIndex},
+	{"doNotRestart",scheduler_doNotRestart},
+	{"steal",scheduler_steal},
+	{"setPriority",scheduler_setPriority},
+	{"getPriority",scheduler_getPriority},
+	{"maxEventsWhenFocused",scheduler_maxEventsWhenFocused},
 	{NULL,NULL}
 };
 
-LSTAGE_EXPORTAPI	int luaopen_lstage_scheduler(lua_State *L) {
-
-//	if(!ready_queue) ready_queue=lstage_lfqueue_new();
+LSTAGE_EXPORTAPI int luaopen_lstage_scheduler(lua_State *L) {
 	get_metatable(L);
 	lua_pop(L,1);
 	lua_newtable(L);

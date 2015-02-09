@@ -22,6 +22,7 @@ OBJ=  lstage.o \
 		marshal.o \
 		event.o \
 		instance.o \
+		monitoring.o \
 		threading.o \
 		scheduler.o \
 		pool.o \

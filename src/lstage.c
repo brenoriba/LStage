@@ -231,16 +231,15 @@ static int lstage_build_polling_table (lua_State * L) {
 		lua_rawgeti(L,1,i);
 	}
 
-        stageCell_t currentCell = NULL;
-        stageCell_t priorCell   = NULL;
-	stageCell_t mainCell    = NULL;
+        stageCell_t priorCell = NULL;
+	stageCell_t mainCell  = NULL;
 
 	// Get stages and build polling table
 	for(i = len; i > 0; i--) {
 		// Convert into stage
 		s = lstage_tostage(L, (-1) * i);
 
-		currentCell = malloc(sizeof(struct lstage_StageCell));
+		stageCell_t currentCell = malloc(sizeof(struct lstage_StageCell));
 		currentCell->stage = s;
 		currentCell->nextCell = NULL;
 
@@ -397,6 +396,52 @@ LSTAGE_EXPORTAPI int luaopen_lstage_stage(lua_State *L);
 LSTAGE_EXPORTAPI int luaopen_lstage_pool(lua_State *L);
 LSTAGE_EXPORTAPI int luaopen_lstage_channel(lua_State *L);
 
+// Interface model
+LSTAGE_EXPORTAPI int luaopen_lstage_monitoring(lua_State *L);
+LSTAGE_EXPORTAPI int luaopen_lstage_instance(lua_State *L);
+
+/*
+ *********************************************************************************
+ [LEDA] INTERFACE MODEL
+ *********************************************************************************
+*/
+
+// Use a processing queue per stage
+static int lstage_usePrivateQueues(lua_State * L) {
+	lua_pushinteger(L,400);
+	return 1;
+}
+
+// Set queue max capacity
+static int lstage_setQueueCapacity(lua_State * L) {
+	lua_pushinteger(L,400);
+	return 1;
+}
+
+// Get queue capacity
+static int lstage_getQueueCapacity(lua_State * L) {
+	lua_pushinteger(L,400);
+	return 1;
+}
+
+// Disable stage's queue
+static int lstage_disableQueue(lua_State * L) {
+	lua_pushinteger(L,400);
+	return 1;
+}
+
+// Enable stage's queue
+static int lstage_enableQueue(lua_State * L) {
+	lua_pushinteger(L,400);
+	return 1;
+}
+
+// Check if a queue is enabled
+static int lstage_queueIsEnabled(lua_State * L) {
+	lua_pushinteger(L,400);
+	return 1;
+}
+
 static const struct luaL_Reg LuaExportFunctions[] = {
 	{"_VERSION",lstage_version},
 	{"now",lstage_gettime},
@@ -411,6 +456,15 @@ static const struct luaL_Reg LuaExportFunctions[] = {
 	{"buildpollingtable",lstage_build_polling_table},
 	{"fireLastFocused",lstage_fire_last_focused},
 	{"maxsteps",lstage_max_queue_steps},
+
+	// Interface	
+	{"usePrivateQueues",lstage_usePrivateQueues},
+	{"setQueueCapacity",lstage_setQueueCapacity},
+	{"getQueueCapacity",lstage_getQueueCapacity},
+	{"disableQueue",lstage_disableQueue},
+	{"enableQueue",lstage_enableQueue},
+	{"queueIsEnabled",lstage_queueIsEnabled},
+
 	{NULL,NULL}
 	};
 
@@ -436,8 +490,16 @@ LSTAGE_EXPORTAPI int luaopen_lstage(lua_State *L) {
 		lstage_buildpool(L,lstage_defaultpool);
 	}
 	lua_setfield(L,-4,"pool");
-	//lua_setfield(L,-3,"pool");
 	lua_pop(L,2);
+
+	// Monitoring
+	lstage_require(L,"lstage.monitoring",luaopen_lstage_monitoring);
+	lua_setfield(L,-2,"monitoring");
+
+	// Instance
+	lstage_require(L,"lstage.instance",luaopen_lstage_instance);
+	lua_setfield(L,-2,"instance");
+
 	lstage_require(L,"lstage.event",luaopen_lstage_event);
 	lua_getfield(L,-1,"encode");
 	lua_setfield(L,-3,"encode");
@@ -458,6 +520,7 @@ LSTAGE_EXPORTAPI int luaopen_lstage(lua_State *L) {
 	luaL_loadstring(L,"return function() return require'lstage' end");
 	lua_setfield (L, -2,"__persist");
 	lua_setmetatable(L,-2);
+
 #if LUA_VERSION_NUM < 502
 	luaL_register(L, NULL, LuaExportFunctions);
 #else

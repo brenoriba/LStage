@@ -83,3 +83,56 @@ void lstage_destroyinstance(instance_t i) {
    if(i->ev) lstage_destroyevent(i->ev);
    free(i);
 }
+
+/*
+ *********************************************************************************
+ [INSTANCE] INTERFACE MODEL
+ *********************************************************************************
+*/
+
+// Add new instances
+static int instance_add(lua_State * L) {
+	lua_pushinteger(L,400);
+	return 1;
+}
+
+// Kill instances
+static int instance_kill(lua_State * L) {
+	lua_pushinteger(L,400);
+	return 1;
+}
+
+// Get instances count
+static int instance_getInstancesCount(lua_State * L) {
+	lua_pushinteger(L,400);
+	return 1;
+}
+
+// Get free instances count
+static int instance_getFreeInstancesCount(lua_State * L) {
+	lua_pushinteger(L,400);
+	return 1;
+}
+
+static const struct luaL_Reg LuaExportFunctions[] = {
+		// Interface model
+		{"add",instance_add},
+		{"kill",instance_kill},
+		{"getInstancesCount",instance_getInstancesCount},
+		{"getFreeInstancesCount",instance_getFreeInstancesCount},
+		{NULL,NULL}
+};
+
+LSTAGE_EXPORTAPI int luaopen_lstage_instance(lua_State *L) {
+	lua_newtable(L);
+	lua_newtable(L);
+	luaL_loadstring(L,"return function() return require'lstage.instance' end");
+	lua_setfield (L, -2,"__persist");
+	lua_setmetatable(L,-2);
+#if LUA_VERSION_NUM < 502
+	luaL_register(L, NULL, LuaExportFunctions);
+#else
+	luaL_setfuncs(L, LuaExportFunctions, 0);
+#endif        
+	return 1;
+};

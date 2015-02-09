@@ -6,6 +6,7 @@ local stage2=lstage.stage(
 		for ix=0, 10000000 do
 			index = index + 1
 		end
+		print(name)
 	end,4)
 
 local stage1=lstage.stage(

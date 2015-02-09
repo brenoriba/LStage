@@ -1,32 +1,54 @@
---[[
-	The MG1 policy
-
-	Like Cohort scheduling's wavefront pattern, the MG1 policy was based on a very simple idea, namely
-	that stages should receive time on the CPU in proportion to their load.
-
-	The polling tables for the MG1 policy are constructed in such a way that the most heavily-loaded 	 stages are visited more frequently than mostly-idle stages.
-
-	Reference: http://www.cl.cam.ac.uk/techreports/UCAM-CL-TR-781.pdf
-
-	**************************************** PUC-RIO 2014 ****************************************
-
-	Implemented by: 
-		- Breno Riba
-		
-	Implemented on March 2014
-	   
-	**********************************************************************************************
-]]--
-
-local mg1    = {}
 local lstage = require 'lstage'
-local stages = {}
+local pool   = require 'lstage.pool'
 
-function mg1.compare(a,b)
+local total = 0
+local stage4=lstage.stage(
+	function(name) 
+		local index = 0
+		for ix=0, 10000000 do
+			index = index + 1
+		end
+		total = total + 1
+		print("[TOTAL] "..total)						
+	end,2)
+
+local stage3=lstage.stage(
+	function(name) 
+		local index = 0
+		for ix=0, 10000000 do
+			index = index + 1
+		end
+		--print(name)	
+		stage4:push('s4')					
+	end,2)
+
+local stage2=lstage.stage(
+	function(name) 
+		local index = 0
+		for ix=0, 10000000 do
+			index = index + 1
+		end
+		--print(name) 
+		stage3:push('s3')
+	end,2)
+
+local stage1=lstage.stage(
+	function(name) 
+		local index = 0
+		for ix=0, 10000000 do
+			index = index + 1
+		end
+		print(name)
+		stage2:push('s2')
+	end,2)
+
+local stages = {stage1,stage2,stage3,stage4}
+
+function compare(a,b)
   return a.visits > b.visits
 end
 
-function mg1.buildVisitOrder (pollingTable)
+function buildVisitOrder (pollingTable)
 	-- Build new polling table
 	local newVisitOrder = {}
 	local maxSize 	    = #pollingTable
@@ -37,6 +59,7 @@ function mg1.buildVisitOrder (pollingTable)
 	repeat
 		-- Insert into polling table
 		if (pollingTable[index].visits ~= 0) then
+			--table.insert(newVisitOrder, { id = pollingTable[index].id, stage = pollingTable[index].stage})
 			table.insert(newVisitOrder, pollingTable[index].stage)
 			pollingTable[index].visits = pollingTable[index].visits - 1
 
@@ -68,6 +91,7 @@ function is_focused()
 	-- Get demand for each stage
 	for i,stage in ipairs(stages) do
 		pollingTable[i]        = {}
+		pollingTable[i].id     = i
 		pollingTable[i].stage  = stage
 		pollingTable[i].load   = stage:getInputCount()
 		pollingTable[i].visits = 0
@@ -93,46 +117,37 @@ function is_focused()
 		end
 
 		-- Sort by number of visits
-		table.sort(pollingTable, mg1.compare)
+		table.sort(pollingTable, compare)
 
 		-- Build new polling table
-		local newVisitOrder = mg1.buildVisitOrder (pollingTable)
-
+		local newVisitOrder = buildVisitOrder (pollingTable)
+print("FIRED! ***************************************")
 		-- Build new polling table
+		--[[local order = ""
+		local del = ""
+		for i,cell in ipairs(newVisitOrder) do
+			order = order .. del .. cell.id
+			dell = ","
+		end
+		print(order)--]]
 		lstage.buildpollingtable(newVisitOrder)
 	end
 end
 
---[[
-	<summary>
-		MG1 configure method
-	</summary>
-	<param name="stagesTable">LEDA stages table</param>
-	<param name="numberOfThreads">Number of threads to be created</param>
-]]--
-function mg1.configure(stagesTable, numberOfThreads)
-	-- Graph with one stage
-	-- Nothing to do in this case
-	if (#stagesTable <= 1) then
-		return
-	end
+lstage.buildpollingtable(stages)
+lstage.useprivatequeues(0)
+lstage.fireLastFocused()
 
-	-- We keep table in a global because we will
-	-- use to get stage's rate at "on_timer" callback
-	stages = stagesTable
-
-	lstage.buildpollingtable(stages)
-	lstage.useprivatequeues(0)
-
-	for i,stage in ipairs(stages) do
-		--stage:max_events_when_focused(5)
-	end
-
-	-- Creating threads
-	lstage.pool:add(numberOfThreads)
-
-	-- Configure last stage to fire when focused
-	lstage.fireLastFocused()
+for i,stage in ipairs(stages) do
+	--stage:max_events_when_focused(5)
 end
 
-return mg1
+lstage.pool:add(2)
+
+for i=1,500 do
+   stage1:push('s1')
+   stage3:push('s3')
+end
+
+lstage.dispatchevents()
+lstage.channel():get()

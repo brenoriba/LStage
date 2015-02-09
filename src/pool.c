@@ -89,6 +89,25 @@ static void get_metatable(lua_State * L) {
   	}
 }
 
+static int pool_get(lua_State * L) {
+	pool_t p=lua_touserdata(L,1);
+	if(p) {
+		_DEBUG("pool_get %p\n",p);
+		lstage_buildpool(L,p);
+		return 1;
+	}
+	lua_pushnil(L);
+	lua_pushliteral(L,"Pool is null");
+	return 2;
+}
+
+/*
+ *********************************************************************************
+ [POOL] INTERFACE MODEL
+ *********************************************************************************
+*/
+
+// Create a new pool
 static int pool_new(lua_State *L) {
 	int size=lua_tointeger(L,1);
 
@@ -108,28 +127,52 @@ static int pool_new(lua_State *L) {
 	return 1;
 }
 
-static int pool_get(lua_State * L) {
-	pool_t p=lua_touserdata(L,1);
-	if(p) {
-		_DEBUG("pool_get %p\n",p);
-		lstage_buildpool(L,p);
-		return 1;
-	}
-	lua_pushnil(L);
-	lua_pushliteral(L,"Pool is null");
-	return 2;
+// Set a new pool to a stage
+static int pool_setPool(lua_State * L) {
+	lua_pushinteger(L,400);
+	return 1;
 }
 
-//TODO Destroy pool
+// Add more threads
+static int pool_addThreads(lua_State * L) {
+	lua_pushinteger(L,400);
+	return 1;
+}
 
+// Kill threads
+static int pool_killThreads(lua_State * L) {
+	lua_pushinteger(L,400);
+	return 1;
+}
+
+// Get stage's pool
+static int pool_getPool(lua_State * L) {
+	lua_pushinteger(L,400);
+	return 1;
+}
+
+// Get threads count
+static int pool_getThreadsCount(lua_State * L) {
+	lua_pushinteger(L,400);
+	return 1;
+}
 
 static const struct luaL_Reg LuaExportFunctions[] = {
-		{"new",pool_new},
 		{"get",pool_get},
+
+		// Interface model
+		{"new",pool_new},
+		{"setPool",pool_setPool},
+		{"addThreads",pool_addThreads},
+		{"killThreads",pool_killThreads},
+		{"getPool",pool_getPool},
+		{"getThreadsCount",pool_getThreadsCount},
 		{NULL,NULL}
 };
 
 LSTAGE_EXPORTAPI int luaopen_lstage_pool(lua_State *L) {
+	get_metatable(L);
+	lua_pop(L,1);
 	lua_newtable(L);
 	lua_newtable(L);
 	luaL_loadstring(L,"return function() return require'lstage.pool' end");

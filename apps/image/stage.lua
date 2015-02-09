@@ -39,10 +39,8 @@ stage.save=lstage.stage(
 			print("[stage_save] "..err)
 		end
 
-		--if (debug) then
-			local time = lstage.now()-timers.io
-			print("[WITH IO][out] "..relative.." [secs] "..time)
-		--end
+		local time = lstage.now()-timers.io
+		print("[WITH IO][out] "..relative.." [secs] "..time)
 	end,instances)
 
 -- Apply invert
@@ -53,12 +51,6 @@ stage.invert=lstage.stage(
 		if (img == nil) then
 			return
 		end
-
-		local count = 0
-		for i=1,10000000 do
-			count = count + 1
-		end
-		local ok = count
 
 		-- Invert pixels
 		imglib.invert(img)
@@ -86,9 +78,7 @@ stage.second_threshold=lstage.stage(
 			return
 		end
 
-		--for i=1,100 do
-			imglib.threshold(img,threshold,maxValue)
-		--end
+		imglib.threshold(img,threshold,maxValue)
 
 		-- Push into another stage
 		local msg = "[stage_invert] Error while applying invert into "..filename
@@ -111,9 +101,7 @@ stage.blur=lstage.stage(
 		end
 
 		-- Apply blur
-		--for i=1,100 do
-			imglib.blur(img,2)
-		--end
+		imglib.blur(img,2)
 
 		-- Push into another stage
 		local msg = "[stage_second_threshold] Error while applying threshold into "..filename
@@ -135,9 +123,7 @@ stage.first_threshold=lstage.stage(
 			return
 		end
 
-		--for i=1,100 do	
-			imglib.threshold(img,threshold,maxValue)
-		--end
+		imglib.threshold(img,threshold,maxValue)
 
 		-- Push into another stage
 		local msg = "[stage_blur] Error while applying blur into "..filename
@@ -159,15 +145,7 @@ stage.grayscale=lstage.stage(
 			return
 		end
 
-		local count = 0
-		for i=1,100000000 do
-			count = count + 1
-		end
-		local ok = count
-
-		--for i=1,100 do
-			imglib.grayscale(img)
-		--end
+		imglib.grayscale(img)
 
 		-- Push into another stage
 		local msg = "[stage_first_threshold] Error while applying first threshold into "..filename

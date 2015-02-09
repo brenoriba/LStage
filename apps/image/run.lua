@@ -14,7 +14,7 @@ local stage 	  = require 'stage' 	  -- Project stages
 
 -- Available controllers
 -- {SRPT,MG1,SEDA,DYNAMIC,COLOR}
-local policy 	      = "MG1"
+local policy 	      = "COLOR"
 local instanceControl = false
 
 -- Input directory

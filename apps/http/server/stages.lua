@@ -20,12 +20,6 @@ local scriptDir = "scripts/"
 
 -- Send answer
 cacheSendFile=function(clientSocket, res, html)
-	local countdown = 0
-	for i=0,30000000,1 do
-		countdown = countdown + 1
-	end
-	local final = countdown
-
 	-- Imports
 	require 'table'
 
@@ -39,12 +33,6 @@ end
 
 -- Load cache file
 cacheLoadFile=function(clientSocket, reqData, body)
-	local countdown = 0
-	for i=0,30000000,1 do
-		countdown = countdown + 1
-	end
-	local final = countdown
-
 	-- Imports
 	require 'table'
 	require 'io'
@@ -55,7 +43,7 @@ cacheLoadFile=function(clientSocket, reqData, body)
         local html      = "<html>Hello there</html>"..body
 
 	-- Prepare headers
-	res.headers["Content-Length"] = #html + #body
+	res.headers["Content-Length"] = #html
 	res.headers["Content-Type"]   = "text/html"
 	res.status_code               = 200
 
@@ -71,12 +59,11 @@ runScript=function(clientSocket, reqData)
 	require 'io'
 
 	local script = scriptDir.."index.lua"
-	--local file   = io.open(script,"r")
+	local file   = io.open(script,"r")
 
 	-- Read script file
-	--file:close()
-	--local body = dofile(script)
-        local body = "my way"
+	file:close()
+	local body = dofile(script)       
   	
 	stages.cacheLoadFile:push(clientSocket, reqData, body)
 end
@@ -108,12 +95,6 @@ handle=function(clientSocket)
 	if reqData.relpath == "/" then
       		reqData.relpath="index.html"
    	end
-
-	local countdown = 0
-	for i=0,30000000,1 do
-		countdown = countdown + 1
-	end
-	local final = countdown
 
 	-- Show static page
 	stages.runScript:push(clientSocket, reqData)

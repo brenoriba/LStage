@@ -39,7 +39,6 @@ client=lstage.stage(
 lstage.pool:add()
 
 -- Push message into client stage
---client:push("http://127.0.0.1:8080/index.lua")
 client:push("http://127.0.0.1:8080/index.html")
 
 -- Avoid script to close
